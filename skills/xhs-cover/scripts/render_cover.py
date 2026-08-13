@@ -8,24 +8,35 @@
     封面标题是要被人读的，不能赌。
     所以分工：image_gen 负责背景和氛围，中文标题走本地渲染，像素级可控。
 
+风格：zine 系列参考 gc-minimal-zine-poster 的 style-system ——
+纸纹负空间 + 单一高彩度锚色 + 安静的衬线/打字机字 + 印刷缺陷（网点、颗粒、套印偏移）。
+差别在于那套是 3:5 海报、留白 70–90%、字很小；小红书封面是 3:4，而且要在信息流
+缩略图里读得清。所以 zine 把留白降到约 55–70%、标题字号提到可读区间；
+zine-pure 才是忠实照搬比例的版本。
+
 依赖：系统里有 Edge 或 Chrome。Windows 自带 Edge，零安装。
 只用标准库。不联网。
 
 用法：
-    # 纯色背景（最稳，可读性最好）
-    python render_cover.py --title "京都下雨那天|我什么都没干" --out cover.png
-
-    # 用 image_gen 生成的背景图
+    # 默认 zine 风格
     python render_cover.py --title "京都下雨那天|我什么都没干" \
-        --bg cover-bg.png --style photo --out cover.png
+        --label "travel [03]" --caption "一个人旅行 · 第 3 天" \
+        --micro "kyoto 2026.08" --sig "@vivian" --out cover.png
 
-    # 标题里用 [方括号] 强调
-    python render_cover.py --title "三天京都|我只去了[四个]地方" --out cover.png
+    # 忠实 zine（留白拉满，字很小）
+    python render_cover.py --title "京都下雨那天|我什么都没干" --style zine-pure --out cover.png
+
+    # 照片窗口版（照片不出血，压网点去饱和）
+    python render_cover.py --title "京都下雨那天|我什么都没干" \
+        --bg cover-bg.png --style zine-photo --out cover.png
+
+    # 换纸色和锚色
+    python render_cover.py --title "..." --tone kraft --accent tomato --out cover.png
 
     # 改完 cover.html 后重新渲染
     python render_cover.py --from-html cover.html --out cover.png
 
-标题里的 `|` 是手动换行，`[xxx]` 是强调色。
+标题里的 `|` 是手动换行，`[xxx]` 是锚色强调。
 """
 
 from __future__ import annotations
@@ -49,70 +60,146 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "cover-template.html"
-
 W, H = 1080, 1440
-SAFE_X = 84                      # 与模板里的 --safe-x 保持一致
-USABLE = W - SAFE_X * 2          # 912px 可用宽度
-TITLE_SIZE_CAP = 170             # 再大就压迫了
 
-# 每种风格的默认值。CLI 参数可覆盖任意一项。
+# ---------------------------------------------------------------- 调色板
+# 纸色 —— 对应 style-system 的 paper tones
+PAPER_TONES = {
+    "warm-white": "#F7F3EC",
+    "ivory": "#F2EADB",
+    "light-gray": "#EBE9E3",
+    "old-yellow": "#EFE3C4",
+    "khaki": "#E3DBC2",
+    "kraft": "#DDCEB1",
+}
+
+# 高彩度锚色 —— 对应 style-system 的 color anchor 列表
+ACCENTS = {
+    "cobalt": "#1B45C8",
+    "ultramarine": "#2A2BA8",
+    "cyan": "#0093D0",
+    "violet": "#6A3CC0",
+    "magenta": "#E5006D",
+    "pink": "#FF4FA3",
+    "lemon": "#E4BE00",
+    "pear": "#7FA82B",
+    "orange": "#F06A1E",
+    "tomato": "#D63A22",
+}
+
+# 内容簇位置 —— 对应 style-system 的 cluster positioning options
+POSITIONS = {
+    "lower-left": ("flex-end", "flex-start", "left"),
+    "upper-right": ("flex-start", "flex-end", "right"),
+    "center-low": ("flex-end", "center", "center"),
+    "center-high": ("flex-start", "center", "center"),
+    "left-middle": ("center", "flex-start", "left"),
+    "right-middle": ("center", "flex-end", "right"),
+}
+
+# ---------------------------------------------------------------- 风格预设
 STYLES = {
-    "plain": {  # 纯色背景 + 深色字。没有背景图时的默认，可读性最好
-        "bgcolor": "#f4efe7",
-        "fg": "#1f1b16",
-        "accent": "#c2452d",
-        "scrim": "none",
-        "shadow": "",
-        "justify": "center",
-        "band_bg": "transparent",
-        "tag_fg": "#ffffff",
+    # ============ zine 系列 ============
+    "zine": {
+        # 主推。留白约 60%，标题仍能在信息流缩略图里读清。
+        "tone": "ivory", "accent": "cobalt",
+        "ink": "#241F1A", "ink_soft": "#7C7466", "accent2": "#8A8172",
+        "safe_x": 130, "safe_y": "11%",
+        "title_font": "var(--serif)", "title_weight": 400,
+        "title_cap": 100, "title_track": 0.05, "title_leading": 1.52,
+        "caption_size": 27,
+        "pos": "lower-left",
+        "grain": 0.20, "scan": 0.0, "marks": 0.45,
+        "rule": True, "dash": False,
+        "anchor": True, "anchor_w": 132, "anchor_h": 132,
+        "anchor_clip": "polygon(0% 2%, 97% 0%, 100% 96%, 3% 100%)",
+        "photo": False, "bgfull": False,
+        "dots": True, "dots_pos": "right: 132px; top: 17%;",
         "inset": 0,
     },
-    "photo": {  # 照片背景 + 底部渐变遮罩 + 白字
-        "bgcolor": "#2a2a2a",
-        "fg": "#ffffff",
-        "accent": "#ffd166",
-        "scrim": "linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.38) 42%, rgba(0,0,0,.12) 100%)",
+    "zine-pure": {
+        # 忠实版：留白 75%+，字很小，单一小锚。
+        # 好看，但在信息流缩略图里标题会偏小 —— 适合已有粉丝基础、不靠封面抓陌生人时用。
+        "tone": "warm-white", "accent": "tomato",
+        "ink": "#2A2520", "ink_soft": "#8A8378", "accent2": "#9A9184",
+        "safe_x": 196, "safe_y": "16%",
+        "title_font": "var(--serif)", "title_weight": 400,
+        "title_cap": 62, "title_track": 0.14, "title_leading": 1.85,
+        "caption_size": 21,
+        "pos": "center-low",
+        "grain": 0.26, "scan": 0.0, "marks": 0.5,
+        "rule": False, "dash": False,
+        "anchor": True, "anchor_w": 86, "anchor_h": 86,
+        "anchor_clip": "polygon(0% 4%, 96% 0%, 100% 95%, 5% 100%)",
+        "photo": False, "bgfull": False,
+        # 点群要躲开内容簇。zine-pure 的簇在 center-low，所以点群放右上。
+        "dots": True, "dots_pos": "right: 196px; top: 14%;",
+        "inset": 0,
+    },
+    "zine-photo": {
+        # 照片不出血，装在窗口里，去饱和 + 压网点 + 轻微单色油墨叠加。
+        "tone": "warm-white", "accent": "cobalt",
+        "ink": "#241F1A", "ink_soft": "#7C7466", "accent2": "#8A8172",
+        "safe_x": 122, "safe_y": "9%",
+        "title_font": "var(--serif)", "title_weight": 400,
+        "title_cap": 88, "title_track": 0.05, "title_leading": 1.5,
+        "caption_size": 25,
+        "pos": "center-low",
+        "grain": 0.22, "scan": 0.10, "marks": 0.45,
+        "rule": False, "dash": True,
+        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "photo": True, "photo_h": 690, "photo_rot": -0.7,
+        "photo_gray": 0.88, "halftone": 0.45, "photo_ink": 0.14,
+        "bgfull": False,
+        "dots": False, "dots_pos": "",
+        "inset": 0,
+    },
+
+    # ============ 传统大字封面（想要冲击力时用） ============
+    "plain": {
+        "tone": "#F4EFE7", "accent": "tomato",
+        "ink": "#1F1B16", "ink_soft": "#6E675C", "accent2": "#8A8172",
+        "safe_x": 84, "safe_y": "8%",
+        "title_font": "var(--sans)", "title_weight": 900,
+        "title_cap": 168, "title_track": 0.01, "title_leading": 1.24,
+        "caption_size": 40,
+        "pos": "center-low",
+        "grain": 0.0, "scan": 0.0, "marks": 0.0,
+        "rule": False, "dash": False,
+        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "photo": False, "bgfull": False,
+        "dots": False, "dots_pos": "",
+        "inset": 0,
+    },
+    "photo": {
+        "tone": "#2A2A2A", "accent": "lemon",
+        "ink": "#FFFFFF", "ink_soft": "#E8E4DC", "accent2": "#8A8172",
+        "safe_x": 84, "safe_y": "8%",
+        "title_font": "var(--sans)", "title_weight": 900,
+        "title_cap": 168, "title_track": 0.01, "title_leading": 1.24,
+        "caption_size": 40,
+        "pos": "center-low",
+        "grain": 0.0, "scan": 0.0, "marks": 0.0,
+        "rule": False, "dash": False,
+        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "photo": False, "bgfull": True,
+        "scrim": ("linear-gradient(to top, rgba(0,0,0,.74) 0%,"
+                  " rgba(0,0,0,.40) 42%, rgba(0,0,0,.12) 100%)"),
         "shadow": "text-shadow: 0 3px 24px rgba(0,0,0,.45);",
-        "justify": "flex-end",
-        "band_bg": "transparent",
-        "tag_fg": "#1f1b16",
+        "dots": False, "dots_pos": "",
         "inset": 0,
-    },
-    "band": {  # 照片背景 + 文字垫半透明色块。照片很花时用这个
-        "bgcolor": "#2a2a2a",
-        "fg": "#1f1b16",
-        "accent": "#c2452d",
-        "scrim": "rgba(0,0,0,.10)",
-        "shadow": "",
-        "justify": "center",
-        "band_bg": "rgba(255,255,255,.92)",
-        "tag_fg": "#ffffff",
-        "inset": 48,   # 每行色块的左右 padding 22px×2，留点余量
-    },
-    "note": {  # 左侧竖线，像便签。适合文字型、心情型
-        "bgcolor": "#faf7f2",
-        "fg": "#22201d",
-        "accent": "#4a7c59",
-        "scrim": "none",
-        "shadow": "",
-        "justify": "center",
-        "band_bg": "transparent",
-        "tag_fg": "#ffffff",
-        "inset": 46,   # 左侧 10px 竖线 + 32px padding
     },
 }
 
+DEFAULT_SCRIM = "none"
 
-# ------------------------------------------------------------------ 浏览器
+
+# ---------------------------------------------------------------- 浏览器
 def find_browser() -> str:
-    """找一个 Chromium 系浏览器。Windows 自带 Edge。"""
-    if os.environ.get("BROWSER_PATH"):
-        p = os.environ["BROWSER_PATH"]
-        if Path(p).is_file():
-            return p
+    if os.environ.get("BROWSER_PATH") and Path(os.environ["BROWSER_PATH"]).is_file():
+        return os.environ["BROWSER_PATH"]
 
-    candidates = [
+    for c in (
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -120,26 +207,24 @@ def find_browser() -> str:
         "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    ]
-    for c in candidates:
+    ):
         if Path(c).is_file():
             return c
 
-    for name in ("msedge", "microsoft-edge", "microsoft-edge-stable",
-                 "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"):
+    for name in ("msedge", "microsoft-edge", "microsoft-edge-stable", "google-chrome",
+                 "google-chrome-stable", "chromium", "chromium-browser", "chrome"):
         found = shutil.which(name)
         if found:
             return found
 
     sys.exit(
         "[错误] 找不到 Edge 或 Chrome。\n"
-        "  Windows 应该自带 Edge，如果装在非默认位置，用环境变量指定：\n"
+        "  Windows 应该自带 Edge，装在非默认位置就用环境变量指定：\n"
         "    $env:BROWSER_PATH = 'C:\\path\\to\\msedge.exe'"
     )
 
 
 def png_size(path: Path) -> tuple[int, int] | None:
-    """直接读 PNG 头拿尺寸，不引 Pillow。"""
     try:
         data = path.read_bytes()[:24]
         if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
@@ -154,10 +239,10 @@ def shoot(browser: str, html: Path, out: Path) -> None:
     if out.exists():
         out.unlink()
 
+    last = ""
     # 临时 profile：避免和已经开着的 Edge/Chrome 抢用户目录
     with tempfile.TemporaryDirectory(prefix="xhs-cover-") as profile:
-        base = [
-            browser,
+        tail = [
             "--disable-gpu",
             "--hide-scrollbars",
             "--force-device-scale-factor=1",
@@ -172,9 +257,8 @@ def shoot(browser: str, html: Path, out: Path) -> None:
         ]
         # 不同版本的 headless 开关行为不一样，两种都试
         for flag in ("--headless", "--headless=old"):
-            cmd = base[:1] + [flag] + base[1:]
             try:
-                proc = subprocess.run(cmd, capture_output=True, timeout=90)
+                proc = subprocess.run([browser, flag, *tail], capture_output=True, timeout=90)
             except subprocess.TimeoutExpired:
                 continue
             if out.is_file() and out.stat().st_size > 0:
@@ -184,7 +268,12 @@ def shoot(browser: str, html: Path, out: Path) -> None:
     sys.exit(f"[错误] 截图失败。浏览器输出：\n{last}")
 
 
-# ------------------------------------------------------------------ 组装 HTML
+# ---------------------------------------------------------------- 组装
+def resolve_color(value: str, table: dict[str, str]) -> str:
+    """接受调色板名字或直接的 CSS 颜色值。"""
+    return table.get(value.strip().lower(), value)
+
+
 def bg_css(bg: Path | None, html_out: Path) -> str:
     if not bg:
         return "none"
@@ -202,106 +291,172 @@ def esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def title_html(title: str, style: str, inset: int = 0) -> tuple[str, int]:
-    """
-    `|` 换行，`[xxx]` 强调。
+def accent_markup(text: str, tag: str) -> str:
+    """把 [xxx] 换成上锚色的标签。"""
+    parts, pos = [], 0
+    for m in re.finditer(r"\[([^\]]+)\]", text):
+        parts.append(esc(text[pos:m.start()]))
+        parts.append(f"<{tag}>{esc(m.group(1))}</{tag}>")
+        pos = m.end()
+    parts.append(esc(text[pos:]))
+    return "".join(parts)
 
-    字号按最长那行的字数反推，保证塞得进可用宽度而不折行。
-    `inset` 是该风格额外占掉的横向空间（note 的竖线、band 的色块 padding），
-    不扣掉的话标题会意外折行。
+
+def char_width(s: str) -> float:
+    """CJK 算 1，其余算 0.55。用来反推字号。"""
+    s = re.sub(r"[\[\]]", "", s)
+    return sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in s)
+
+
+def title_html(title: str, cap: int, track: float, usable: float) -> tuple[str, int]:
+    """
+    `|` 换行，`[xxx]` 上锚色。
+    字号按最长那行反推，扣掉字距，保证塞得进可用宽度而不意外折行。
     """
     lines = [ln.strip() for ln in title.split("|") if ln.strip()]
     if not lines:
         sys.exit("[错误] 标题是空的。")
 
-    # 算字数时不含方括号本身。ASCII 字符按半宽算。
-    def width_in_chars(s: str) -> float:
-        s = re.sub(r"[\[\]]", "", s)
-        return sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in s)
-
-    max_chars = max(width_in_chars(ln) for ln in lines)
-    avail = USABLE - inset
-    size = min(TITLE_SIZE_CAP, int(avail / max(max_chars, 1) * 0.96))
-
-    out = []
-    for ln in lines:
-        # [xxx] → <em>xxx</em>
-        parts, pos = [], 0
-        for m in re.finditer(r"\[([^\]]+)\]", ln):
-            parts.append(esc(ln[pos:m.start()]))
-            parts.append(f"<em>{esc(m.group(1))}</em>")
-            pos = m.end()
-        parts.append(esc(ln[pos:]))
-        inner = "".join(parts)
-        out.append(f'<span class="line">{inner}</span>' if style == "band" else inner)
-
-    sep = "<br>" if style != "band" else "<br>"
-    return sep.join(out), size
+    widest = max(char_width(ln) for ln in lines)
+    # 每个字实际占 size*(1+track)
+    size = min(cap, int(usable / max(widest * (1 + track), 1) * 0.98))
+    body = "<br>".join(accent_markup(ln, "em") for ln in lines)
+    return body, size
 
 
 def build_html(args, cfg: dict, html_out: Path) -> str:
     tpl = TEMPLATE.read_text(encoding="utf-8")
-    t_html, auto_size = title_html(args.title, args.style, cfg.get("inset", 0))
+
+    paper = resolve_color(args.tone or cfg["tone"], PAPER_TONES)
+    accent = resolve_color(args.accent or cfg["accent"], ACCENTS)
+    accent2 = resolve_color(args.accent2 or cfg["accent2"], ACCENTS)
+
+    safe_x = args.safe_x or cfg["safe_x"]
+    usable = W - safe_x * 2 - cfg.get("inset", 0)
+    track = cfg["title_track"] if args.title_track is None else args.title_track
+
+    t_html, auto_size = title_html(args.title, cfg["title_cap"], track, usable)
     size = args.title_size or auto_size
 
-    align = args.align
-    items = {"left": "flex-start", "center": "center", "right": "flex-end"}[align]
+    pos = args.pos or cfg["pos"]
+    justify, items, align = POSITIONS[pos]
 
-    subs = ""
-    if args.sub:
-        sub_lines = "<br>".join(esc(x.strip()) for x in args.sub.split("|") if x.strip())
-        subs = f'<div class="sub">{sub_lines}</div>'
+    has_photo = bool(cfg.get("photo") and args.bg)
+    has_bgfull = bool(cfg.get("bgfull") and args.bg)
 
-    tag = f'<div class="tag">{esc(args.tag)}</div>' if args.tag else ""
-    sig = f'<div class="sig">{esc(args.sig)}</div>' if args.sig else ""
+    def show(flag: bool) -> str:
+        return "block" if flag else "none"
+
+    label_html = accent_markup(args.label, "b") if args.label else ""
+    caption_html = "<br>".join(esc(x.strip()) for x in args.caption.split("|")) if args.caption else ""
 
     repl = {
-        "__FG__": args.fg or cfg["fg"],
-        "__BGCOLOR__": args.bgcolor or cfg["bgcolor"],
-        "__ACCENT__": args.accent or cfg["accent"],
+        "__PAPER__": paper,
+        "__INK__": args.ink or cfg["ink"],
+        "__INK_SOFT__": cfg["ink_soft"],
+        "__ACCENT__": accent,
+        "__ACCENT2__": accent2,
+
         "__TITLE_SIZE__": str(size),
-        "__SUB_SIZE__": str(args.sub_size),
-        "__BG_URL__": bg_css(Path(args.bg) if args.bg else None, html_out),
-        "__SCRIM__": cfg["scrim"] if args.bg else "none",
-        "__TITLE_SHADOW__": cfg["shadow"] if args.bg else "",
-        "__JUSTIFY__": cfg["justify"],
+        "__TITLE_TRACK__": str(track),
+        "__TITLE_LEADING__": str(cfg["title_leading"]),
+        "__CAPTION_SIZE__": str(cfg["caption_size"]),
+        # 带单位一起传 —— safe_y 是百分比，模板里不能再补 px
+        "__SAFE_X__": f"{safe_x}px",
+        "__SAFE_Y__": cfg["safe_y"],
+
+        "__GRAIN__": str(0.0 if args.no_grain else cfg["grain"]),
+        "__SCAN__": str(cfg.get("scan", 0.0)),
+        "__MARKS__": str(0.0 if args.no_marks else cfg["marks"]),
+
+        "__JUSTIFY__": justify,
         "__ITEMS__": items,
         "__ALIGN__": align,
-        "__BAND_BG__": cfg["band_bg"],
-        "__TAG_FG__": cfg["tag_fg"],
+
+        "__LABEL_DISPLAY__": show(bool(label_html)),
+        "__RULE_DISPLAY__": show(cfg["rule"]),
+        "__DASH_DISPLAY__": show(cfg["dash"]),
+
+        "__ANCHOR_DISPLAY__": show(cfg["anchor"] and not has_photo),
+        "__ANCHOR_W__": str(cfg["anchor_w"]),
+        "__ANCHOR_H__": str(cfg["anchor_h"]),
+        "__ANCHOR_CLIP__": cfg["anchor_clip"],
+
+        "__PHOTO_DISPLAY__": show(has_photo),
+        "__PHOTO_H__": str(cfg.get("photo_h", 0)),
+        "__PHOTO_ROT__": str(cfg.get("photo_rot", 0)),
+        "__PHOTO_GRAY__": str(cfg.get("photo_gray", 0)),
+        "__HALFTONE__": str(0.0 if args.no_halftone else cfg.get("halftone", 0)),
+        "__PHOTO_INK__": str(cfg.get("photo_ink", 0)),
+
+        "__BGFULL_DISPLAY__": show(has_bgfull),
+        "__SCRIM__": cfg.get("scrim", DEFAULT_SCRIM),
+        "__BG_URL__": bg_css(Path(args.bg) if args.bg else None, html_out),
+
+        "__TITLE_FONT__": cfg["title_font"],
+        "__TITLE_WEIGHT__": str(cfg["title_weight"]),
+        "__TITLE_SHADOW__": cfg.get("shadow", "") if has_bgfull else "",
+
+        "__CAPTION_DISPLAY__": show(bool(caption_html)),
+        "__MICRO_DISPLAY__": show(bool(args.micro)),
+        "__SIG_DISPLAY__": show(bool(args.sig)),
+        "__DOTS_DISPLAY__": show(cfg["dots"] and not args.no_marks),
+        "__DOTS_POS__": cfg["dots_pos"],
+
         "__STYLE__": args.style,
-        "__TAG_HTML__": tag,
+        "__EXTRA_CLASS__": "",
+        "__LABEL_HTML__": label_html,
         "__TITLE_HTML__": t_html,
-        "__SUB_HTML__": subs,
-        "__SIG_HTML__": sig,
+        "__CAPTION_HTML__": caption_html,
+        "__MICRO_HTML__": esc(args.micro) if args.micro else "",
+        "__SIG_HTML__": esc(args.sig) if args.sig else "",
     }
+
     for k, v in repl.items():
         tpl = tpl.replace(k, v)
+
+    leftover = re.findall(r"__[A-Z0-9_]+__", tpl)
+    if leftover:
+        sys.exit(f"[错误] 模板里有没填的占位符：{sorted(set(leftover))}")
     return tpl
 
 
-# ------------------------------------------------------------------ main
+# ---------------------------------------------------------------- main
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="把小红书封面渲染成 1080×1440 PNG",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="标题里 `|` 是换行，`[xxx]` 是强调色。",
+        epilog=(
+            "标题里 `|` 是换行，`[xxx]` 上锚色。\n"
+            f"纸色：{', '.join(PAPER_TONES)}\n"
+            f"锚色：{', '.join(ACCENTS)}\n"
+            f"位置：{', '.join(POSITIONS)}"
+        ),
     )
-    ap.add_argument("--title", help="主标题。`|` 换行，`[xxx]` 强调")
-    ap.add_argument("--sub", help="副标题，可用 `|` 换行")
-    ap.add_argument("--tag", help="左上/顶部的小标签，如「旅行」")
-    ap.add_argument("--sig", help="底部署名，如「@vivian」")
-    ap.add_argument("--bg", help="背景图（通常是 image_gen 出的 1024×1536）")
-    ap.add_argument("--style", default="plain", choices=sorted(STYLES), help="默认 plain")
-    ap.add_argument("--align", default="left", choices=["left", "center", "right"])
-    ap.add_argument("--fg", help="文字色，覆盖风格默认")
-    ap.add_argument("--bgcolor", help="背景色，覆盖风格默认")
-    ap.add_argument("--accent", help="强调色，覆盖风格默认")
-    ap.add_argument("--title-size", type=int, help="主标题字号，默认按字数自动算")
-    ap.add_argument("--sub-size", type=int, default=40, help="副标题字号，默认 40")
+    ap.add_argument("--title", help="主标题。`|` 换行，`[xxx]` 上锚色")
+    ap.add_argument("--label", help="顶部打字机小标签，如 'travel [03]'")
+    ap.add_argument("--caption", help="标题下的说明，可用 `|` 换行")
+    ap.add_argument("--micro", help="右侧竖排微文字，如 'kyoto 2026.08'")
+    ap.add_argument("--sig", help="底部署名，如 '@vivian'")
+    ap.add_argument("--sub", dest="caption", help="--caption 的别名")
+    ap.add_argument("--tag", dest="label", help="--label 的别名")
+
+    ap.add_argument("--bg", help="背景图（image_gen 出的，或你的实拍）")
+    ap.add_argument("--style", default="zine", choices=list(STYLES), help="默认 zine")
+    ap.add_argument("--tone", help=f"纸色：{', '.join(PAPER_TONES)}，或直接给 CSS 颜色")
+    ap.add_argument("--accent", help=f"锚色：{', '.join(ACCENTS)}，或直接给 CSS 颜色")
+    ap.add_argument("--accent2", help="套印偏移的第二色，必须次要")
+    ap.add_argument("--ink", help="正文墨色")
+    ap.add_argument("--pos", choices=list(POSITIONS), help="内容簇位置")
+    ap.add_argument("--safe-x", type=int, dest="safe_x", help="左右留白像素")
+    ap.add_argument("--title-size", type=int, help="标题字号，默认按字数自动算")
+    ap.add_argument("--title-track", type=float, help="标题字距（em）")
+    ap.add_argument("--no-grain", action="store_true", help="关掉纸纹颗粒")
+    ap.add_argument("--no-marks", action="store_true", help="关掉套准标记和点群")
+    ap.add_argument("--no-halftone", action="store_true", help="关掉照片网点")
+
     ap.add_argument("--out", default="cover.png", help="输出 PNG，默认 cover.png")
     ap.add_argument("--from-html", help="跳过模板，直接渲染这个 HTML")
-    ap.add_argument("--keep-html", action="store_true", help="（默认就会保留 cover.html，此项兼容用）")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -322,17 +477,16 @@ def main() -> int:
 
     size = png_size(out)
     kb = out.stat().st_size / 1024
-    print(f"✅ {out}  ({kb:.0f} KB)")
+    print(f"✅ {out}  ({kb:.0f} KB)  style={args.style}")
     if not args.from_html:
         print(f"   排版源文件：{html}  ← 想微调就改这个，然后：")
         print(f"   python {Path(__file__).name} --from-html {html} --out {out}")
 
     if size:
-        print(f"   尺寸：{size[0]}×{size[1]}", end="")
-        if size == (W, H):
-            print("  ✅ 3:4，符合小红书封面规范")
-        else:
-            print(f"  ⚠️ 期望 {W}×{H}，请检查")
+        ok = size == (W, H)
+        print(f"   尺寸：{size[0]}×{size[1]}"
+              + ("  ✅ 3:4，符合小红书封面规范" if ok else f"  ⚠️ 期望 {W}×{H}，请检查"))
+        if not ok:
             return 1
     else:
         print("   ⚠️ 读不出 PNG 尺寸，文件可能有问题")

@@ -141,17 +141,37 @@ L1/L2 是拦截项（exit 1）。
 
 封面标题是要被人读的，不能赌 AI 这次能不能把字写对。所以**背景归 AI，文字归渲染器**。
 
+### 风格：zine 极简杂志风
+
+视觉体系参考 [gc-minimal-zine-poster](https://github.com/LiamGvchi/gc-minimal-zine-poster)：
+**纸纹负空间 + 单一高彩度锚色 + 安静的宋体／打字机字 + 印刷缺陷**（半调网点、
+颗粒、套印偏移、套准标记）。纸纹和颗粒是 CSS + 内联 SVG 噪声做的，不依赖任何外部图片。
+
 ```bash
 python skills/xhs-cover/scripts/render_cover.py \
-  --title "京都下雨那天|我什么都没干" --sub "一个人旅行 · 第 3 天" \
-  --tag "旅行" --style plain --out cover.png
+  --title "京都下雨那天|我什么都没干" \
+  --label "travel [03]" --caption "一个人旅行 · 第 3 天" \
+  --micro "kyoto 2026.08" --sig "@vivian" --out cover.png
 ```
 
-出 1080×1440（3:4）PNG，四种样式：`plain` / `photo` / `band` / `note`。
-字号按字数自动算，保证塞进安全区不折行。
+出 1080×1440（3:4）PNG。五种样式：
 
-每次渲染都在 PNG 旁边留一份 `cover.html` —— 想微调改它，然后
-`--from-html cover.html` 重渲。
+| 样式 | 说明 |
+|---|---|
+| `zine` ★默认 | 留白约 60%，标题 88–100px。安静但缩略图里读得清 |
+| `zine-pure` | 忠实原版：留白 75%+，字很小。好看，但靠封面抓陌生人时吃亏 |
+| `zine-photo` | 照片装进不出血窗口，去饱和 + 压网点 + 叠锚色油墨 |
+| `plain` / `photo` | 传统大黑字封面。想要冲击力时用 |
+
+**原版是 3:5 海报、留白 70–90%、字很小**；小红书封面是 3:4 且要在信息流缩略图里
+被看清，完全照搬标题会小到读不出来。`zine` 是调过比例的版本，`zine-pure` 是忠实版
+—— 两个都在，你自己挑。理由写在 [zine-style.md](skills/xhs-cover/references/zine-style.md)。
+
+纸色 6 种（`ivory` `kraft` `khaki` …）× 锚色 10 种（`cobalt` `tomato` `pear` …）。
+**每篇固定同一组**，主页九宫格才有辨识度。
+
+字号按字数自动算，扣掉字距和内缩，保证不折行。每次渲染都在 PNG 旁边留一份
+`cover.html` —— 想微调改它，然后 `--from-html cover.html` 重渲。
 
 ---
 
@@ -202,7 +222,8 @@ drafts/2026-08-13-kyoto-rainy-day/
     │   └── references/                  平台规则 / 安全改写 / 发布清单
     ├── xhs-cover/               # 封面图
     │   ├── scripts/render_cover.py      HTML → 1080×1440 PNG
-    │   └── assets/cover-template.html   排版模板
+    │   ├── assets/cover-template.html   排版模板（纸纹/颗粒/网点都在这）
+    │   └── references/zine-style.md     zine 视觉体系与改编说明
     ├── xhs-script/              # 视频脚本 · 分镜
     └── xhs-vlog/                # 剪辑协助 · 字幕
         └── scripts/make_srt.py          口播稿 → .srt
@@ -223,6 +244,7 @@ python skills/xhs-voice/scripts/voice_stats.py samples
 
 # 封面渲染
 python skills/xhs-cover/scripts/render_cover.py --title "标题|第二行" --out cover.png
+python skills/xhs-cover/scripts/render_cover.py --title "..." --tone kraft --accent tomato --out cover.png
 
 # 字幕生成
 python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5.0
