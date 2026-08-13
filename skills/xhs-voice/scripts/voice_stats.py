@@ -286,16 +286,28 @@ def main() -> int:
     args = ap.parse_args()
 
     files: list[Path] = []
+    subdirs: list[Path] = []
     for raw in args.paths:
         p = Path(raw)
         if p.is_dir():
             files += sorted(list(p.glob("*.md")) + list(p.glob("*.txt")))
+            # 下划线开头的目录是刻意排除的（比如 samples/_ai/ 放 AI 稿）
+            subdirs += [d for d in sorted(p.iterdir())
+                        if d.is_dir() and not d.name.startswith(("_", "."))]
         elif p.is_file():
             files.append(p)
-    files = [f for f in files if f.name.lower() != "readme.md"]
+    # 下划线开头的文件同理，README 也不算样本
+    files = [f for f in files
+             if f.name.lower() != "readme.md" and not f.name.startswith(("_", "."))]
 
     if not files:
-        sys.exit("[错误] 没找到样本文件。")
+        msg = "[错误] 没找到样本文件。"
+        if subdirs:
+            msg += ("\n  这个目录下只有子目录。分模式统计要分别指向子目录：\n"
+                    + "\n".join(f"    python {Path(__file__).name} {d}" for d in subdirs))
+        else:
+            msg += " samples/ 里放几篇你**自己写的**笔记（.md 或 .txt）。"
+        sys.exit(msg)
 
     d = analyse(files)
     print(json.dumps(d, ensure_ascii=False, indent=2) if args.as_json else render(d))

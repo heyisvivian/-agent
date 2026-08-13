@@ -1,7 +1,7 @@
 # 你的历史笔记语料 —— 本地学习用，不上传
 samples/*
 !samples/README.md
-!samples/example.md
+!samples/_format-example.md
 
 # 你的语气档案 —— 默认不上传。
 # 这个仓库是公开的，而 voice.md 里会有你笔记的原文引用和写作习惯分析。
