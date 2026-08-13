@@ -73,6 +73,9 @@ python skills/xhs-guard/scripts/xhs_scan.py drafts/<日期>-<slug>/note.md
 其他用法：
 
 ```bash
+# 科普/清单型 —— 正文长度的舒适区和生活型不一样，一定要指定
+python skills/xhs-guard/scripts/xhs_scan.py note.md --type guide
+
 # 直接扫一段话
 python skills/xhs-guard/scripts/xhs_scan.py --text "全网最好吃的一家，私我拿地址"
 
@@ -89,6 +92,18 @@ python skills/xhs-guard/scripts/xhs_scan.py note.md --json
 Windows 上 `python` 不通就换 `py -3`。脚本只用标准库，不联网，不上传内容。
 
 退出码：`0` = 无拦截项，`1` = 有拦截项，`2` = 参数/文件错误。
+
+### `--type` 要选对
+
+只影响**正文长度**的舒适区判断，但选错会给出没意义的建议：
+
+| `--type` | 舒适区 | 用于 |
+|---|---|---|
+| `life`（默认） | 300–600 字 | 生活、日常、vlog、旅行片段 |
+| `guide` | 400–950 字 | 科普、法规解读、清单、攻略、干货 |
+| `short` | 80–300 字 | 一句话笔记 |
+
+和 `xhs-note` 第 0 步定的模式保持一致。
 
 ### 第 3 步 · 语境裁决（模型层）★ 不要跳过
 

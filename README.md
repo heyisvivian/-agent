@@ -67,14 +67,20 @@ macOS / Linux：
 ## 快速开始
 
 ```bash
-# 1. 把你发过的笔记放进 samples/（一篇一个 .md，8 篇以上比较准）
-#    见 samples/README.md
+# 1. 把你发过的笔记放进 samples/，按类型分子目录：
+#      samples/guide/   科普 / 信息型
+#      samples/life/    生活 / 日常 / vlog / 旅行
+#    每种 8 篇以上比较准。见 samples/README.md
 
 # 2. 开 codex，让它学你的语气
 ```
 > 学一下我的语气
 
 会生成 `profile/voice.md`。**这一步做过一次就行**，之后所有写/改都基于它。
+
+⚠️ **档案是分模式的。** 同一个人写科普和写生活不是同一套写法 ——
+科普稿里 emoji 当项目符号是对的，生活稿里同样密度就成模板号了。
+所以要分开放样本、分开统计、分开建档，写之前先定模式。
 
 ```
 # 3. 然后就可以直接说话了
@@ -167,8 +173,29 @@ python skills/xhs-cover/scripts/render_cover.py \
 被看清，完全照搬标题会小到读不出来。`zine` 是调过比例的版本，`zine-pure` 是忠实版
 —— 两个都在，你自己挑。理由写在 [zine-style.md](skills/xhs-cover/references/zine-style.md)。
 
-纸色 6 种（`ivory` `kraft` `khaki` …）× 锚色 10 种（`cobalt` `tomato` `pear` …）。
-**每篇固定同一组**，主页九宫格才有辨识度。
+### 锚每篇按主题换
+
+封面中间那个高彩度图形（锚）**不是固定方块** —— 26 个形状，按这篇的核心隐喻挑：
+
+| 组 | 形状 |
+|---|---|
+| 几何 / 通用 | `block` `disc` `ring` `arc` `triangle` `cross` `slash` `bracket` |
+| 数据 / 时间 | `bars` `timeline` `steps` `dots-grid` `arrow` |
+| 制度 / 法规 | `stars` `stamp` `scale` `shield` `ban` |
+| 自然 / 生活 | `moon` `waves` `rain` `sun` `window-frame` `cup` |
+| 抽象材质 | `halftone` `grain-square` |
+
+库里没有就 `--anchor-svg` 自己画（viewBox `0 0 100 100`，颜色用 `currentColor`）。
+
+### 配色固定，锚变化
+
+| | 变不变 | 为什么 |
+|---|---|---|
+| 纸色 + 锚色 + 署名 | **固定** | 主页九宫格的辨识度靠这个 |
+| 锚形状 | **每篇换** | 封面要指向这一篇的内容 |
+
+固定那部分写进 `profile/cover.json`，脚本自动往上找，不用每次敲。
+命令行参数优先级更高，渲染时会打印实际生效的字段。
 
 字号按字数自动算，扣掉字距和内缩，保证不折行。每次渲染都在 PNG 旁边留一份
 `cover.html` —— 想微调改它，然后 `--from-html cover.html` 重渲。

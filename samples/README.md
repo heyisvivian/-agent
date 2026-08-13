@@ -6,6 +6,30 @@
 
 ---
 
+## ★ 按内容类型分子目录
+
+这个账号有两种内容，写法不是同一套，所以**分开放、分开统计**：
+
+```
+samples/
+├── guide/     科普 / 信息型（法规解读、清单、干货）
+└── life/      生活 / 日常 / vlog / 旅行
+```
+
+```bash
+python skills/xhs-voice/scripts/voice_stats.py samples/guide
+python skills/xhs-voice/scripts/voice_stats.py samples/life
+```
+
+**混在一起统计没意义** —— 两种模式的 emoji 密度会被平均成一个不存在的数字。
+科普稿 emoji 当项目符号（每百字 2.7 个），生活稿可能一个都不用，
+平均出来 1.3 个，两边都不对。
+
+只有一种内容就直接放 `samples/` 根目录。
+第三种类型（比如恰饭稿、测评）就再开一个子目录。
+
+---
+
 ## 怎么放
 
 一篇一个文件，`.md` 或 `.txt` 都行。文件名随便。

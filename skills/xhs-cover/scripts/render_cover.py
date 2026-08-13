@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import json
 import mimetypes
 import os
 import re
@@ -365,6 +366,40 @@ STYLES = {
 
 DEFAULT_SCRIM = "none"
 
+# 账号级预设。锚每篇按主题换，但纸色/锚色/署名应该固定 —— 主页九宫格才有辨识度。
+# 放在 profile/cover.json，脚本会从当前目录往上找。CLI 参数优先级更高。
+PRESET_FILE = "profile/cover.json"
+PRESET_KEYS = ("style", "tone", "accent", "accent2", "ink", "sig", "pos",
+               "safe_x", "title_track")
+
+
+def load_preset(explicit: str | None) -> tuple[dict, str | None]:
+    """返回 (预设内容, 来源路径)。找不到就返回空字典。"""
+    if explicit:
+        p = Path(explicit)
+        if not p.is_file():
+            sys.exit(f"[错误] 找不到预设文件：{p}")
+        candidates = [p]
+    else:
+        # 从当前目录往上找，再退到脚本所在仓库的根
+        here = Path.cwd().resolve()
+        candidates = [d / PRESET_FILE for d in [here, *here.parents]]
+        repo = Path(__file__).resolve().parents[3]
+        candidates.append(repo / PRESET_FILE)
+
+    for c in candidates:
+        if c.is_file():
+            try:
+                data = json.loads(c.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                sys.exit(f"[错误] 预设不是合法 JSON：{c}\n  {exc}")
+            unknown = set(data) - set(PRESET_KEYS)
+            if unknown:
+                print(f"[提示] 预设里有不认识的字段，已忽略：{', '.join(sorted(unknown))}",
+                      file=sys.stderr)
+            return {k: v for k, v in data.items() if k in PRESET_KEYS}, str(c)
+    return {}, None
+
 
 # ---------------------------------------------------------------- 浏览器
 def find_browser() -> str:
@@ -410,6 +445,9 @@ def shoot(browser: str, html: Path, out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     if out.exists():
         out.unlink()
+    # --screenshot 必须给绝对路径：无头浏览器按它自己的工作目录解析相对路径，
+    # 会写到临时 profile 目录里去（然后报 Access is denied）。
+    shot = out.resolve()
 
     last = ""
     # 临时 profile：避免和已经开着的 Edge/Chrome 抢用户目录
@@ -424,7 +462,7 @@ def shoot(browser: str, html: Path, out: Path) -> None:
             "--no-sandbox",
             f"--user-data-dir={profile}",
             f"--window-size={W},{H}",
-            f"--screenshot={out}",
+            f"--screenshot={shot}",
             html.resolve().as_uri(),
         ]
         # 不同版本的 headless 开关行为不一样，两种都试
@@ -625,7 +663,9 @@ def main() -> int:
     ap.add_argument("--tag", dest="label", help="--label 的别名")
 
     ap.add_argument("--bg", help="背景图（image_gen 出的，或你的实拍）")
-    ap.add_argument("--style", default="zine", choices=list(STYLES), help="默认 zine")
+    ap.add_argument("--style", choices=list(STYLES), help="默认 zine（或 profile/cover.json 里的值）")
+    ap.add_argument("--preset", help=f"账号预设 JSON，默认自动找 {PRESET_FILE}")
+    ap.add_argument("--no-preset", dest="no_preset", action="store_true", help="忽略预设文件")
     ap.add_argument("--tone", help=f"纸色：{', '.join(PAPER_TONES)}，或直接给 CSS 颜色")
     ap.add_argument("--accent", help=f"锚色：{', '.join(ACCENTS)}，或直接给 CSS 颜色")
     ap.add_argument("--accent2", help="套印偏移的第二色，必须次要")
@@ -649,6 +689,16 @@ def main() -> int:
     ap.add_argument("--from-html", help="跳过模板，直接渲染这个 HTML")
     args = ap.parse_args()
 
+    # 账号预设填空白，CLI 显式给的值优先
+    preset, preset_src = ({}, None) if args.no_preset else load_preset(args.preset)
+    applied = {}
+    for k, v in preset.items():
+        if getattr(args, k, None) is None:
+            setattr(args, k, v)
+            applied[k] = v          # 只记真正生效的，被 CLI 覆盖的不算
+    if args.style is None:
+        args.style = "zine"
+
     out = Path(args.out)
     browser = find_browser()
 
@@ -667,7 +717,12 @@ def main() -> int:
 
     size = png_size(out)
     kb = out.stat().st_size / 1024
-    print(f"✅ {out}  ({kb:.0f} KB)  style={args.style}")
+    anchor_note = f"  anchor={args.anchor}" if args.anchor else ""
+    print(f"✅ {out}  ({kb:.0f} KB)  style={args.style}{anchor_note}")
+    if preset_src:
+        used = ", ".join(f"{k}={v}" for k, v in applied.items()) or "（全部被命令行覆盖）"
+        print(f"   预设：{preset_src}")
+        print(f"   生效：{used}")
     if not args.from_html:
         print(f"   排版源文件：{html}  ← 想微调就改这个，然后：")
         print(f"   python {Path(__file__).name} --from-html {html} --out {out}")

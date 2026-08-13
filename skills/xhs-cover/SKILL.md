@@ -248,8 +248,42 @@ style-system 里锚的形态是「剪影 / 实心油墨块 / 印刷插图 / 标�
 **只用一个锚色。** 第二色（`--accent2`）只做套印偏移，必须次要到几乎看不出是第二个颜色。
 多色 = 违背整套风格。
 
-**账号一致性**：`--tone` 和 `--accent` 每篇固定下来，主页九宫格会有辨识度。
-换色只在换系列时换。
+### 账号预设 —— 配色固定，锚形状变
+
+分工很明确：
+
+| | 变不变 | 为什么 |
+|---|---|---|
+| **纸色 + 锚色 + 署名** | **固定** | 主页九宫格的辨识度靠这个 |
+| **锚形状** | **每篇按主题换** | 封面要指向这一篇的内容 |
+
+固定那部分写进 `profile/cover.json`，脚本会从当前目录往上找，**不用每次打**：
+
+```json
+{
+  "style": "zine",
+  "tone": "ivory",
+  "accent": "cobalt",
+  "sig": "@vivian"
+}
+```
+
+于是每篇只需要给这一篇特有的东西：
+
+```bash
+python skills/xhs-cover/scripts/render_cover.py \
+  --title "京都下雨那天|我什么都没干" \
+  --label "travel [03]" --caption "一个人旅行 · 第 3 天" \
+  --micro "kyoto 2026.08" --anchor rain \
+  --out drafts/2026-08-13-kyoto/cover.png
+```
+
+命令行参数**优先级高于预设**，临时换色直接加 `--accent tomato` 就行。
+`--preset <path>` 指定别的文件，`--no-preset` 完全忽略。
+渲染时会打印预设路径和实际生效的字段，不会有隐形行为。
+
+可放进预设的字段：`style` `tone` `accent` `accent2` `ink` `sig` `pos` `safe_x` `title_track`。
+**`anchor` 不在里面** —— 它必须每篇重新想。
 
 ---
 
