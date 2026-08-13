@@ -155,6 +155,87 @@ python skills/xhs-cover/scripts/render_cover.py \
 
 ---
 
+## 锚：每篇按主题换，不要永远是方块
+
+style-system 里锚的形态是「剪影 / 实心油墨块 / 印刷插图 / 标本 / 不规则剪裁 /
+环绕标记 / 抽象材质窗口」—— **不是一个固定的方块**。
+
+**每写一篇就重新挑一次锚。** 挑的依据是这篇内容的**核心隐喻**，
+不是标题的字面意思。
+
+```bash
+--anchor stars      # 从形状库挑
+--anchor none       # 这篇不要锚
+--anchor-svg "..."  # 库里没有 → 自己画一个
+--anchor-size 150   # 调大小，默认 132（zine）/ 92（zine-pure）
+```
+
+### 形状库（26 个）
+
+| 组 | 形状 |
+|---|---|
+| 几何 / 通用 | `block` `disc` `ring` `arc` `triangle` `cross` `slash` `bracket` |
+| 数据 / 时间 | `bars` `timeline` `steps` `dots-grid` `arrow` |
+| 制度 / 法规 | `stars` `stamp` `scale` `shield` `ban` |
+| 自然 / 生活 | `moon` `waves` `rain` `sun` `window-frame` `cup` |
+| 抽象材质 | `halftone` `grain-square` |
+
+### 怎么挑
+
+| 内容主题 | 用哪个 |
+|---|---|
+| 欧盟 / 国际组织 | `stars` |
+| 法律 / 法规 / 合规 | `scale` `stamp` |
+| 禁令 / 不能做 / 红线 | `ban` `cross` |
+| 隐私 / 保护 / 安全 | `shield` |
+| 时间线 / 阶段 / 生效日期 | `timeline` |
+| 步骤 / 进阶 / 逐级 | `steps` `arrow` |
+| 数据 / 对比 / 排行 | `bars` `dots-grid` |
+| 下雨 / 阴天 | `rain` |
+| 夜晚 / 深夜 / 失眠 | `moon` |
+| 晴天 / 夏天 / 户外 | `sun` |
+| 海边 / 河 / 温泉 | `waves` |
+| 咖啡 / 茶 / 吃喝 | `cup` |
+| 房间 / 民宿 / 窗边 / 搬家 | `window-frame` |
+| 引用一句话 / 摘录 | `bracket` |
+| 情绪 / 说不清的感觉 | `halftone` `grain-square` `arc` `ring` |
+| 转折 / 变化 | `slash` `arrow` |
+
+### 库里没有就自己画
+
+```bash
+--anchor-svg 'path/to/shape.svg'
+--anchor-svg '<circle cx="50" cy="50" r="30" fill="currentColor"/>'
+```
+
+规矩：
+- `viewBox 0 0 100 100`，或者给完整的 `<svg>` 自带 viewBox
+- **颜色一律用 `currentColor`** —— 这样套印偏移那层会自动变成第二色
+- 单色，别用渐变、别用多色，别加文字
+- 形状要能在 132px 见方里读出来 —— 细节太多就糊了
+
+传片段会自动包一层 `<svg>`；传完整 `<svg>` 就原样用。
+
+### 三条纪律
+
+1. **一篇一个锚。** 不要拼贴多个形状 —— 那是 dense scrapbook，明确在反身份清单里。
+2. **锚指向隐喻，不指向字面。** 讲"老板不能用 AI 分析你的情绪"，锚是 `ban`（禁令）
+   或 `stars`（欧盟），不是一个人脸。
+3. **连载用同一个锚，换 `--label` 的编号。** 视觉连续性比每篇都新鲜更重要。
+
+### 实现细节
+
+锚会渲染两层：`accent2` 那层错开 4px/3px 做套印偏移，`accent` 那层在上。
+所以自定义 SVG 里如果用了 `<pattern>`，id 必须写成 `xxx__UID__` ——
+两层 id 撞车的话第二层会引用到第一层的 pattern，颜色就错了。库里的
+`halftone` / `grain-square` 就是这么写的，照抄即可。
+
+横向形状（`timeline` `arrow` `waves`）有自己的扁 viewBox，容器长宽比从 viewBox
+自动推导 —— 两边必须一致，否则 `preserveAspectRatio` 会把图形缩到只占容器一小块。
+加新的横向形状时记得在 `ANCHOR_VIEWBOX` 里登记。
+
+---
+
 ## 调色板
 
 用名字就行，也可以直接给 CSS 颜色值。

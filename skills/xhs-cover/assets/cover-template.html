@@ -149,27 +149,25 @@
     opacity: .55;
   }
 
-  /* ---------- 高彩度锚：小色块 ---------- */
-  .anchor-block {
+  /* ---------- 高彩度锚 ----------
+     形状是内联 SVG，每篇按主题换（见 scripts/render_cover.py 的 ANCHORS）。
+     两层叠放：ghost 用第二色错开几像素做套印偏移，riso 的味道就在这。 */
+  .anchor {
     display: __ANCHOR_DISPLAY__;
     position: relative;
     width: __ANCHOR_W__px;
     height: __ANCHOR_H__px;
-    background: var(--accent);
     margin-bottom: 40px;
-    clip-path: __ANCHOR_CLIP__;
   }
-  /* 套印偏移：第二色错开 3px，riso 的味道就在这 */
-  .anchor-block::after {
-    content: "";
-    position: absolute; inset: 0;
-    background: var(--accent2);
+  .anchor-layer { position: absolute; inset: 0; }
+  .anchor-layer svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .anchor-ghost {
+    color: var(--accent2);
     transform: translate(4px, 3px);
+    opacity: .45;
     mix-blend-mode: multiply;
-    opacity: .5;
-    clip-path: inherit;
-    z-index: -1;
   }
+  .anchor-main { color: var(--accent); }
 
   /* ---------- 照片窗口：不出血，压网点，去饱和 ---------- */
   .photo-window {
@@ -307,7 +305,10 @@
         <div class="ink"></div>
         <div class="halftone"></div>
       </div>
-      <div class="anchor-block"></div>
+      <div class="anchor">
+        <div class="anchor-layer anchor-ghost">__ANCHOR_SVG_GHOST__</div>
+        <div class="anchor-layer anchor-main">__ANCHOR_SVG_MAIN__</div>
+      </div>
       <div class="rule"></div>
       <div class="rule-dashed"></div>
       <div class="title">__TITLE_HTML__</div>

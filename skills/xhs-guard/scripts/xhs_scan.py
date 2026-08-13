@@ -202,9 +202,13 @@ def scan_text(note: dict, lex: dict, min_tier: str = "L4") -> list[dict]:
     return hits
 
 
-def check_format(note: dict, lex: dict) -> list[dict]:
+def check_format(note: dict, lex: dict, note_type: str = "life") -> list[dict]:
     s = lex["soft_signals"]
     out = []
+    # 正文长度的舒适区跟内容类型有关：科普/清单型天然比生活片段长
+    body_lo, body_hi = s.get("body_sweet_spot_by_type", {}).get(
+        note_type, s["body_sweet_spot"]
+    )
 
     def add(level, item, actual, want, advice):
         out.append({"level": level, "item": item, "actual": actual, "want": want, "advice": advice})
@@ -225,12 +229,13 @@ def check_format(note: dict, lex: dict) -> list[dict]:
     # 正文
     bl = visible_len(note["body"])
     if bl > s["body_max_chars"]:
-        add("bad", "正文字数", f"{bl} 字", f"≤ {s['body_max_chars']} 字", f"超 {bl - s['body_max_chars']} 字，发不出去，需要删减。")
-    elif not (s["body_sweet_spot"][0] <= bl <= s["body_sweet_spot"][1]):
-        add("warn", "正文字数", f"{bl} 字", f"{s['body_sweet_spot'][0]}–{s['body_sweet_spot'][1]} 字",
-            "生活/旅行类在这个区间的完读率通常最好。")
+        add("bad", "正文字数", f"{bl} 字", f"≤ {s['body_max_chars']} 字",
+            f"超 {bl - s['body_max_chars']} 字，发不出去，需要删减。")
+    elif not (body_lo <= bl <= body_hi):
+        add("warn", "正文字数", f"{bl} 字", f"{body_lo}–{body_hi} 字（{note_type} 型）",
+            "这个区间的完读率通常最好。类型不对就换 --type（life / guide / short）。")
     else:
-        add("ok", "正文字数", f"{bl} 字", "—", "")
+        add("ok", "正文字数", f"{bl} 字（{note_type} 型）", "—", "")
 
     # 标签
     tn = len(note["tags"])
@@ -367,6 +372,12 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", dest="as_json", help="输出 JSON，给程序用")
     ap.add_argument("--min-tier", default="L4", choices=TIER_ORDER, help="最低报告等级，默认 L4（全部）")
     ap.add_argument("--strict", action="store_true", help="把 L3 也算拦截项")
+    ap.add_argument("--type", default="life", dest="note_type",
+                    choices=["life", "guide", "short"],
+                    help="内容类型，只影响正文长度的舒适区判断："
+                         "life 生活片段 300–600 字（默认）、"
+                         "guide 科普/攻略/清单 400–950 字、"
+                         "short 一句话笔记 80–300 字")
     args = ap.parse_args()
 
     if not args.files and not args.text:
@@ -393,7 +404,7 @@ def main() -> int:
     for name, raw in inputs:
         note = parse_note(raw)
         hits = scan_text(note, lex, args.min_tier)
-        fmt = check_format(note, lex)
+        fmt = check_format(note, lex, args.note_type)
         text, blocked = render(note, hits, fmt, lex, args.strict)
         any_blocked = any_blocked or blocked
 

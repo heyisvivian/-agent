@@ -33,6 +33,14 @@ zine-pure 才是忠实照搬比例的版本。
     # 换纸色和锚色
     python render_cover.py --title "..." --tone kraft --accent tomato --out cover.png
 
+    # 锚按主题换（26 个形状，--anchor 看清单；none 关掉）
+    python render_cover.py --title "..." --anchor stars --out cover.png
+    python render_cover.py --title "..." --anchor timeline --out cover.png
+
+    # 库里没有就自己画（viewBox 0 0 100 100，颜色用 currentColor）
+    python render_cover.py --title "..." \
+        --anchor-svg '<circle cx="50" cy="50" r="30" fill="currentColor"/>' --out cover.png
+
     # 改完 cover.html 后重新渲染
     python render_cover.py --from-html cover.html --out cover.png
 
@@ -87,6 +95,172 @@ ACCENTS = {
     "tomato": "#D63A22",
 }
 
+# ---------------------------------------------------------------- 锚形状库
+# style-system 里锚的形态是「剪影 / 实心油墨块 / 印刷插图 / 标本 / 不规则剪裁 /
+# 环绕标记 / 抽象材质窗口」—— 不是永远一个方块。
+# 所以这里备一批 SVG，每篇按主题挑；挑不到就用 --anchor-svg 现画一个。
+#
+# 约定：viewBox 0 0 100 100，颜色一律用 currentColor（由 CSS 的 --accent 注入），
+# 这样套印偏移那层自动变成第二色。
+
+
+def _star_ring(n: int = 12, r: float = 38, sr: float = 9) -> str:
+    """欧盟式的星环。n 颗五角星均匀排在半径 r 的圆上。"""
+    import math
+
+    out = []
+    for i in range(n):
+        a = -math.pi / 2 + i * 2 * math.pi / n
+        cx, cy = 50 + r * math.cos(a), 50 + r * math.sin(a)
+        pts = []
+        for k in range(10):
+            ang = -math.pi / 2 + k * math.pi / 5
+            rad = sr if k % 2 == 0 else sr * 0.42
+            pts.append(f"{cx + rad * math.cos(ang):.2f},{cy + rad * math.sin(ang):.2f}")
+        out.append(f'<polygon points="{" ".join(pts)}"/>')
+    return f'<g fill="currentColor">{"".join(out)}</g>'
+
+
+def _dot_grid(cols: int = 4, rows: int = 4, r: float = 7.5) -> str:
+    step = 100 / cols
+    dots = [
+        f'<circle cx="{step * (c + .5):.1f}" cy="{step * (rw + .5):.1f}" r="{r}"/>'
+        for c in range(cols) for rw in range(rows)
+    ]
+    return f'<g fill="currentColor">{"".join(dots)}</g>'
+
+
+ANCHORS: dict[str, str] = {
+    # ---- 几何 / 通用 ----
+    "block": '<polygon points="2,4 97,0 100,95 5,100" fill="currentColor"/>',
+    "disc": '<circle cx="50" cy="50" r="48" fill="currentColor"/>',
+    "ring": '<circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="8"/>',
+    "arc": '<path d="M50 2 A48 48 0 0 1 50 98 Z" fill="currentColor"/>',
+    "triangle": '<polygon points="50,3 98,95 2,95" fill="currentColor"/>',
+    "cross": ('<g fill="currentColor"><rect x="41" y="2" width="18" height="96"/>'
+              '<rect x="2" y="41" width="96" height="18"/></g>'),
+    "slash": ('<g stroke="currentColor" stroke-width="9">'
+              '<line x1="4" y1="72" x2="72" y2="4"/><line x1="28" y1="96" x2="96" y2="28"/></g>'),
+    "bracket": ('<g fill="none" stroke="currentColor" stroke-width="9">'
+                '<path d="M30 4 H4 V38"/><path d="M70 96 H96 V62"/></g>'),
+
+    # ---- 数据 / 时间 ----
+    "bars": ('<g fill="currentColor"><rect x="4" y="48" width="17" height="52"/>'
+             '<rect x="29" y="22" width="17" height="78"/>'
+             '<rect x="54" y="62" width="17" height="38"/>'
+             '<rect x="79" y="6" width="17" height="94"/></g>'),
+    # 大圆点标"当前进行到这一步"，刻度一高两低做出方向感
+    "timeline": ('<g stroke="currentColor" stroke-width="6">'
+                 '<line x1="2" y1="50" x2="98" y2="50"/>'
+                 '<line x1="14" y1="24" x2="14" y2="76"/>'
+                 '<line x1="36" y1="33" x2="36" y2="67"/>'
+                 '<line x1="88" y1="33" x2="88" y2="67"/></g>'
+                 '<circle cx="62" cy="50" r="16" fill="currentColor"/>'),
+    "steps": ('<g fill="currentColor"><rect x="2" y="74" width="30" height="26"/>'
+              '<rect x="35" y="48" width="30" height="52"/>'
+              '<rect x="68" y="14" width="30" height="86"/></g>'),
+    "dots-grid": _dot_grid(),
+    "arrow": ('<g stroke="currentColor" stroke-width="8" fill="none">'
+              '<line x1="4" y1="50" x2="84" y2="50"/><path d="M62 24 L94 50 L62 76"/></g>'),
+
+    # ---- 制度 / 法规 / 官方 ----
+    "stars": _star_ring(),
+    "stamp": ('<g fill="none" stroke="currentColor"><rect x="4" y="4" width="92" height="92"'
+              ' rx="14" stroke-width="8"/><rect x="21" y="21" width="58" height="58"'
+              ' rx="6" stroke-width="4"/></g>'),
+    # 天平：立柱 + 底座 + 横梁 + 两根吊绳 + 两个浅碗形托盘
+    "scale": ('<g stroke="currentColor" stroke-width="7" fill="none" stroke-linecap="round">'
+              '<line x1="50" y1="20" x2="50" y2="86"/>'
+              '<line x1="28" y1="92" x2="72" y2="92"/>'
+              '<line x1="8" y1="24" x2="92" y2="24"/>'
+              '<line x1="18" y1="24" x2="18" y2="40"/>'
+              '<line x1="82" y1="24" x2="82" y2="40"/>'
+              '<path d="M2 40 Q18 58 34 40"/><path d="M66 40 Q82 58 98 40"/></g>'),
+    "shield": ('<path d="M50 3 L94 18 V52 C94 76 74 91 50 98 C26 91 6 76 6 52 V18 Z"'
+               ' fill="currentColor"/>'),
+    "ban": ('<g fill="none" stroke="currentColor" stroke-width="10">'
+            '<circle cx="50" cy="50" r="43"/><line x1="20" y1="80" x2="80" y2="20"/></g>'),
+
+    # ---- 自然 / 生活 ----
+    "moon": ('<path d="M62 4 A48 48 0 1 0 62 96 A38 38 0 1 1 62 4 Z" fill="currentColor"/>'),
+    "waves": ('<g fill="none" stroke="currentColor" stroke-width="8">'
+              '<path d="M2 30 Q26 12 50 30 T98 30"/><path d="M2 58 Q26 40 50 58 T98 58"/>'
+              '<path d="M2 86 Q26 68 50 86 T98 86"/></g>'),
+    "rain": ('<g stroke="currentColor" stroke-width="8" stroke-linecap="round">'
+             '<line x1="16" y1="8" x2="4" y2="44"/><line x1="42" y1="8" x2="30" y2="44"/>'
+             '<line x1="68" y1="8" x2="56" y2="44"/><line x1="30" y1="56" x2="18" y2="92"/>'
+             '<line x1="56" y1="56" x2="44" y2="92"/><line x1="82" y1="56" x2="70" y2="92"/></g>'),
+    "sun": ('<circle cx="50" cy="50" r="24" fill="currentColor"/>'
+            '<g stroke="currentColor" stroke-width="7" stroke-linecap="round">'
+            '<line x1="50" y1="2" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="98"/>'
+            '<line x1="2" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="98" y2="50"/>'
+            '<line x1="16" y1="16" x2="27" y2="27"/><line x1="73" y1="73" x2="84" y2="84"/>'
+            '<line x1="16" y1="84" x2="27" y2="73"/><line x1="73" y1="27" x2="84" y2="16"/></g>'),
+    "window-frame": ('<g fill="none" stroke="currentColor" stroke-width="8">'
+                     '<rect x="5" y="5" width="90" height="90"/></g>'
+                     '<g stroke="currentColor" stroke-width="6">'
+                     '<line x1="50" y1="5" x2="50" y2="95"/>'
+                     '<line x1="5" y1="50" x2="95" y2="50"/></g>'),
+    "cup": ('<g fill="none" stroke="currentColor" stroke-width="8">'
+            '<path d="M14 26 H72 V60 A29 29 0 0 1 14 60 Z"/>'
+            '<path d="M72 34 H90 A12 12 0 0 1 90 58 H72"/>'
+            '<line x1="10" y1="94" x2="80" y2="94"/></g>'),
+
+    # ---- 抽象材质窗口 ----
+    # 用了 <pattern> 的形状必须把 id 写成 xxx__UID__ —— 锚会渲染两层（套印偏移），
+    # id 重复的话两层都会引用到第一个 pattern，第二层的颜色就错了。
+    "halftone": ('<defs><pattern id="ht__UID__" width="11" height="11"'
+                 ' patternUnits="userSpaceOnUse">'
+                 '<circle cx="5.5" cy="5.5" r="3.6" fill="currentColor"/></pattern></defs>'
+                 '<circle cx="50" cy="50" r="48" fill="url(#ht__UID__)"/>'),
+    "grain-square": ('<defs><pattern id="gs__UID__" width="9" height="9"'
+                     ' patternUnits="userSpaceOnUse">'
+                     '<rect width="4.4" height="4.4" fill="currentColor"/></pattern></defs>'
+                     '<rect x="2" y="2" width="96" height="96" fill="url(#gs__UID__)"/>'),
+}
+
+
+# 有些形状天生是横向的。给它们一个扁的 viewBox，容器的长宽比再从 viewBox 推出来 ——
+# 两边必须一致，否则 SVG 的 preserveAspectRatio 会把图形缩到只占容器的一小块。
+DEFAULT_VIEWBOX = "0 0 100 100"
+ANCHOR_VIEWBOX: dict[str, str] = {
+    "timeline": "0 18 100 64",
+    "arrow": "0 20 100 60",
+    "waves": "0 4 100 92",
+}
+
+
+def anchor_viewbox(name: str) -> str:
+    return ANCHOR_VIEWBOX.get(name, DEFAULT_VIEWBOX)
+
+
+def anchor_box(name: str, size: int) -> tuple[int, int]:
+    """容器尺寸：高度用基准边长，宽度按 viewBox 的长宽比算出来。"""
+    _, _, w, h = (float(x) for x in anchor_viewbox(name).split())
+    return round(size * w / h), size
+
+
+def anchor_svg(name: str | None, custom: str | None) -> str:
+    """
+    返回 viewBox 100×100 的 SVG 内容。custom 优先（文件路径或直接的 SVG 字符串）。
+    形状里的 __UID__ 由调用方按层替换成不同后缀。
+    """
+    if custom:
+        p = Path(custom)
+        raw = p.read_text(encoding="utf-8") if p.is_file() else custom
+        # 已经是完整 <svg> 就原样用，否则包一层
+        if "<svg" in raw:
+            return raw
+        return f'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">{raw}</svg>'
+
+    if name not in ANCHORS:
+        sys.exit(f"[错误] 没有叫 {name} 的锚形状。可选：{', '.join(sorted(ANCHORS))}\n"
+                 f"  想要别的形状就用 --anchor-svg 给一个 SVG（viewBox 0 0 100 100，"
+                 f"颜色用 currentColor）")
+    return (f'<svg viewBox="{anchor_viewbox(name)}" xmlns="http://www.w3.org/2000/svg">'
+            f'{ANCHORS[name]}</svg>')
+
+
 # 内容簇位置 —— 对应 style-system 的 cluster positioning options
 POSITIONS = {
     "lower-left": ("flex-end", "flex-start", "left"),
@@ -111,8 +285,7 @@ STYLES = {
         "pos": "lower-left",
         "grain": 0.20, "scan": 0.0, "marks": 0.45,
         "rule": True, "dash": False,
-        "anchor": True, "anchor_w": 132, "anchor_h": 132,
-        "anchor_clip": "polygon(0% 2%, 97% 0%, 100% 96%, 3% 100%)",
+        "anchor": True, "anchor_shape": "block", "anchor_w": 132, "anchor_h": 132,
         "photo": False, "bgfull": False,
         "dots": True, "dots_pos": "right: 132px; top: 17%;",
         "inset": 0,
@@ -129,8 +302,7 @@ STYLES = {
         "pos": "center-low",
         "grain": 0.26, "scan": 0.0, "marks": 0.5,
         "rule": False, "dash": False,
-        "anchor": True, "anchor_w": 86, "anchor_h": 86,
-        "anchor_clip": "polygon(0% 4%, 96% 0%, 100% 95%, 5% 100%)",
+        "anchor": True, "anchor_shape": "block", "anchor_w": 92, "anchor_h": 92,
         "photo": False, "bgfull": False,
         # 点群要躲开内容簇。zine-pure 的簇在 center-low，所以点群放右上。
         "dots": True, "dots_pos": "right: 196px; top: 14%;",
@@ -147,7 +319,7 @@ STYLES = {
         "pos": "center-low",
         "grain": 0.22, "scan": 0.10, "marks": 0.45,
         "rule": False, "dash": True,
-        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "anchor": False, "anchor_shape": "block", "anchor_w": 0, "anchor_h": 0,
         "photo": True, "photo_h": 690, "photo_rot": -0.7,
         "photo_gray": 0.88, "halftone": 0.45, "photo_ink": 0.14,
         "bgfull": False,
@@ -166,7 +338,7 @@ STYLES = {
         "pos": "center-low",
         "grain": 0.0, "scan": 0.0, "marks": 0.0,
         "rule": False, "dash": False,
-        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "anchor": False, "anchor_shape": "block", "anchor_w": 0, "anchor_h": 0,
         "photo": False, "bgfull": False,
         "dots": False, "dots_pos": "",
         "inset": 0,
@@ -181,7 +353,7 @@ STYLES = {
         "pos": "center-low",
         "grain": 0.0, "scan": 0.0, "marks": 0.0,
         "rule": False, "dash": False,
-        "anchor": False, "anchor_w": 0, "anchor_h": 0, "anchor_clip": "none",
+        "anchor": False, "anchor_shape": "block", "anchor_w": 0, "anchor_h": 0,
         "photo": False, "bgfull": True,
         "scrim": ("linear-gradient(to top, rgba(0,0,0,.74) 0%,"
                   " rgba(0,0,0,.40) 42%, rgba(0,0,0,.12) 100%)"),
@@ -347,6 +519,16 @@ def build_html(args, cfg: dict, html_out: Path) -> str:
     def show(flag: bool) -> str:
         return "block" if flag else "none"
 
+    # 锚：形状每篇按主题换。--anchor none 关掉，--anchor-svg 用自己画的。
+    shape = args.anchor or cfg.get("anchor_shape", "block")
+    want_anchor = cfg["anchor"] and not has_photo and shape != "none" and not args.no_anchor
+    svg = anchor_svg(shape, args.anchor_svg) if want_anchor else ""
+    # 两层用不同 id 后缀，避免 <pattern> id 撞车
+    svg_ghost = svg.replace("__UID__", "a")
+    svg_main = svg.replace("__UID__", "b")
+    # 横向形状按 ANCHOR_BOX 拉宽压扁，不要硬塞进正方形
+    a_w, a_h = anchor_box(shape, args.anchor_size or cfg["anchor_w"])
+
     label_html = accent_markup(args.label, "b") if args.label else ""
     caption_html = "<br>".join(esc(x.strip()) for x in args.caption.split("|")) if args.caption else ""
 
@@ -377,10 +559,11 @@ def build_html(args, cfg: dict, html_out: Path) -> str:
         "__RULE_DISPLAY__": show(cfg["rule"]),
         "__DASH_DISPLAY__": show(cfg["dash"]),
 
-        "__ANCHOR_DISPLAY__": show(cfg["anchor"] and not has_photo),
-        "__ANCHOR_W__": str(cfg["anchor_w"]),
-        "__ANCHOR_H__": str(cfg["anchor_h"]),
-        "__ANCHOR_CLIP__": cfg["anchor_clip"],
+        "__ANCHOR_DISPLAY__": show(want_anchor),
+        "__ANCHOR_W__": str(a_w),
+        "__ANCHOR_H__": str(a_h),
+        "__ANCHOR_SVG_GHOST__": svg_ghost,
+        "__ANCHOR_SVG_MAIN__": svg_main,
 
         "__PHOTO_DISPLAY__": show(has_photo),
         "__PHOTO_H__": str(cfg.get("photo_h", 0)),
@@ -448,6 +631,13 @@ def main() -> int:
     ap.add_argument("--accent2", help="套印偏移的第二色，必须次要")
     ap.add_argument("--ink", help="正文墨色")
     ap.add_argument("--pos", choices=list(POSITIONS), help="内容簇位置")
+    ap.add_argument("--anchor", metavar="SHAPE",
+                    help="锚形状，按主题挑一个；none 关掉。可选：" + ", ".join(sorted(ANCHORS)))
+    ap.add_argument("--anchor-svg", dest="anchor_svg", metavar="SVG",
+                    help="自己画的锚：SVG 文件路径，或直接给 SVG 字符串"
+                         "（viewBox 0 0 100 100，颜色用 currentColor）")
+    ap.add_argument("--anchor-size", dest="anchor_size", type=int, help="锚的边长像素")
+    ap.add_argument("--no-anchor", dest="no_anchor", action="store_true", help="不要锚")
     ap.add_argument("--safe-x", type=int, dest="safe_x", help="左右留白像素")
     ap.add_argument("--title-size", type=int, help="标题字号，默认按字数自动算")
     ap.add_argument("--title-track", type=float, help="标题字距（em）")
