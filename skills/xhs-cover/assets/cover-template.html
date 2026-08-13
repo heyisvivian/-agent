@@ -1,0 +1,148 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>cover</title>
+<!--
+  小红书封面模板 · 1080×1440 (3:4)
+  由 scripts/render_cover.py 填充占位符后用无头浏览器截图。
+  可以直接改这个文件再单独渲染：
+      python render_cover.py --from-html cover.html --out cover.png
+-->
+<style>
+  :root {
+    --w: 1080px;
+    --h: 1440px;
+    --fg: __FG__;
+    --bg: __BGCOLOR__;
+    --accent: __ACCENT__;
+    --title-size: __TITLE_SIZE__px;
+    --sub-size: __SUB_SIZE__px;
+    /* 安全区：上下各留 8%，避开信息流里的 UI 遮挡 */
+    --safe-y: 8%;
+    --safe-x: 84px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB",
+                 "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cover {
+    position: relative;
+    width: var(--w);
+    height: var(--h);
+    overflow: hidden;
+  }
+
+  /* ---- 背景图（image_gen 产出）---- */
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: __BG_URL__;
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* ---- 遮罩：保证白字在任何照片上都读得清 ---- */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: __SCRIM__;
+  }
+
+  /* ---- 文字层 ---- */
+  .content {
+    position: absolute;
+    inset: var(--safe-y) var(--safe-x);
+    display: flex;
+    flex-direction: column;
+    justify-content: __JUSTIFY__;
+    align-items: __ITEMS__;
+    text-align: __ALIGN__;
+    gap: 34px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    padding: 12px 26px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: __TAG_FG__;
+  }
+
+  .title {
+    font-size: var(--title-size);
+    font-weight: 900;
+    line-height: 1.24;
+    letter-spacing: 0.01em;
+    color: var(--fg);
+    text-wrap: balance;
+    __TITLE_SHADOW__
+  }
+
+  /* 强调：标题里用 [方括号] 包住的部分 */
+  .title em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  /* band 样式：文字后面垫半透明色块 */
+  .band .title span.line {
+    display: inline-block;
+    background: __BAND_BG__;
+    padding: 6px 22px 14px;
+    margin: 5px 0;
+    border-radius: 8px;
+  }
+
+  .sub {
+    font-size: var(--sub-size);
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: var(--fg);
+    opacity: .82;
+    __TITLE_SHADOW__
+  }
+
+  /* note 样式：左侧竖线，像手写便签 */
+  .note .title {
+    border-left: 10px solid var(--accent);
+    padding-left: 32px;
+  }
+
+  /* 底部署名 */
+  .sig {
+    position: absolute;
+    left: var(--safe-x);
+    bottom: 58px;
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--fg);
+    opacity: .55;
+  }
+</style>
+
+<div class="cover __STYLE__">
+  <div class="bg"></div>
+  <div class="scrim"></div>
+  <div class="content">
+    __TAG_HTML__
+    <div class="title">__TITLE_HTML__</div>
+    __SUB_HTML__
+  </div>
+  __SIG_HTML__
+</div>

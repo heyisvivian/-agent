@@ -1,0 +1,20 @@
+{
+  "name": "xhs-agent",
+  "version": "0.1.0",
+  "description": "小红书创作助手：按你的语气写/改文案、生成 3:4 封面、写视频脚本与字幕，并在发布前扫一遍违规词与限流风险。赛道侧重生活 / 日常 / vlog / 旅行。",
+  "author": {
+    "name": "heyisvivian"
+  },
+  "homepage": "https://github.com/heyisvivian/-agent",
+  "repository": "https://github.com/heyisvivian/-agent",
+  "license": "MIT",
+  "keywords": [
+    "xiaohongshu",
+    "小红书",
+    "文案",
+    "封面",
+    "vlog",
+    "合规",
+    "违禁词"
+  ]
+}

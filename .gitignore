@@ -1,0 +1,37 @@
+# 你的历史笔记语料 —— 本地学习用，不上传
+samples/*
+!samples/README.md
+!samples/example.md
+
+# 你的语气档案 —— 默认不上传。
+# 这个仓库是公开的，而 voice.md 里会有你笔记的原文引用和写作习惯分析。
+# 想在多台机器间同步就把下面这行删掉（见 profile/README.md）。
+profile/voice.md
+
+# 产出的草稿（图片体积大 + 未发布内容，默认不进 git）
+drafts/*
+!drafts/.gitkeep
+
+# 渲染/生成的中间产物
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.mov
+!skills/**/assets/*.png
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
