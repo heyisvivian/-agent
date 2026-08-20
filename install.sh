@@ -87,7 +87,7 @@ fi
 if command -v codex >/dev/null 2>&1; then
   printf '  ✓ Codex CLI：%s\n' "$(command -v codex)"
 else
-  printf '  ! 没找到 codex 命令（只在 Claude Code 里用可忽略）\n'
+  printf '  ! 没找到 codex 命令 —— 技能已装好，装上 Codex CLI 就能用\n'
 fi
 
 # ---------------------------------------------------------------- 冒烟测试

@@ -1,6 +1,6 @@
 # xhs-agent · 小红书创作技能包
 
-给 **Codex CLI** 用的小红书创作助手（同时兼容 Claude Code）。
+给 **Codex CLI** 用的小红书创作助手。
 **先根据你的真实数据定方向和选题**，再写文案、出 3:4 封面、写视频脚本和字幕，
 **并且在发布前把违规词和限流风险扫一遍**。
 
@@ -38,8 +38,8 @@
 ### Codex CLI
 
 ```bash
-git clone https://github.com/heyisvivian/-agent.git xhs-agent
-cd xhs-agent
+git clone https://github.com/heyisvivian/xiaohongshu-agent.git
+cd xiaohongshu-agent
 ```
 
 Windows：
@@ -62,17 +62,12 @@ macOS / Linux：
 
 装完 install 脚本会自检 Python 和 Codex，并跑一次冒烟测试。
 
-### Claude Code
-
-这个仓库同时是一个标准 plugin（`.claude-plugin/plugin.json` + `skills/`）。
-在 Claude Code 里把仓库目录添加为本地 plugin 就能用。
-
 ### 依赖
 
 | 需要 | 用来 | 备注 |
 |---|---|---|
 | **Python 3.9+** | 合规扫描、语气统计、字幕生成 | 只用标准库，不装任何包 |
-| Codex CLI | 可选 | 不需要任何图像生成 API key |
+| **Codex CLI** | 跑技能的运行环境 | 必需；不需要任何图像生成 API key |
 
 ---
 
@@ -175,7 +170,6 @@ drafts/2026-08-13-kyoto-rainy-day/
 ├── AGENTS.md                    # Agent 宪法：铁律、工作流、产出规范
 ├── README.md
 ├── install.ps1 / install.sh
-├── .claude-plugin/plugin.json   # Claude Code plugin manifest
 ├── profile/
 │   ├── account.md               # ★ 数据基线与内容方向（xhs-strategy 的输入）
 │   └── voice.md                 # 语气护栏（跑 xhs-voice 生成）
