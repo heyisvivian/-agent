@@ -351,7 +351,7 @@ def render(note: dict, hits: list[dict], fmt: list[dict], lex: dict, strict: boo
     L.append("必须人工确认（脚本查不了的）")
     L.append("-" * 68)
     L.append("  □ 图片/视频里有没有其他平台水印、他人正脸、车牌、证件、门牌号")
-    L.append("  □ 用了 image_gen 出图或正文主要由 AI 写 → 发布页勾选【内容类型声明·笔记含 AI 合成内容】")
+    L.append("  □ 正文主要由 AI 起草 → 发布页勾选【内容类型声明·笔记含 AI 合成内容】")
     L.append("  □ 有任何对价（钱 / 免费 / 置换 / 返现）→ 必须走蒲公英报备")
     L.append("  □ 价格、营业时间、签证政策这类会过期的信息，是不是刚核实过")
     L.append("  □ 标签一次选对 —— 有流量后再改容易限流")

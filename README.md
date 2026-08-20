@@ -1,22 +1,35 @@
 # xhs-agent · 小红书创作技能包
 
 给 **Codex CLI** 用的小红书创作助手（同时兼容 Claude Code）。
-按你自己的语气写文案、出 3:4 封面、写视频脚本和字幕，**并且在发布前把违规词和限流风险扫一遍**。
+**先根据你的真实数据定方向和选题**，再写文案、出 3:4 封面、写视频脚本和字幕，
+**并且在发布前把违规词和限流风险扫一遍**。
 
-赛道侧重：**生活 · 日常 · vlog · 旅行**
+赛道侧重：**法国生活实操 · 异国恋 · AI · 好物**
 
 ---
 
-## 它做四件事
+## 它做五件事
 
 | | 做什么 | 技能 |
 |---|---|---|
-| **写** | 从一个想法产出完整笔记，语气是你的 | `xhs-note` |
-| **改** | 把你写好的稿子改好，但不动你的语气 | `xhs-polish` |
+| **定方向** ★ | 从你的互动数据判断哪条线加码、哪条减、下一步发什么 | `xhs-strategy` |
+| **写** | 从一个想法产出完整笔记 | `xhs-note` |
+| **改** | 把你写好的稿子改得更好读 | `xhs-polish` |
 | **拍** | 视频脚本、分镜、口播稿、`.srt` 字幕 | `xhs-script` `xhs-vlog` |
 | **过审** | 违禁词、限流风险、平台红线，发布前全扫一遍 | `xhs-guard` |
 
-配套两个：`xhs-voice`（学你的语气，建档案）、`xhs-cover`（出封面图）。
+配套一个：`xhs-voice`（语气护栏 —— 防 AI 通稿腔）。
+
+**不做封面，不出图。** 封面你自己做 —— 本仓库只负责提醒字数规范，以及**扫封面上的文字**（封面文字一样会被审核）。
+
+### 重心不是模仿笔锋
+
+大部分「AI 写小红书」的工具在做的事是模仿语气。这个仓库 v0.2 起**不这么定位**：
+
+> 「不用太细讲究我的笔锋 我也不是文字博主」—— 用户 2026-08-20
+
+选题选对了，同样的文笔差十倍。所以第一优先是 `xhs-strategy`（发什么），
+语气只留一层护栏：**别写成 AI 通稿，别删掉观众认得的记忆点。**
 
 ---
 
@@ -47,7 +60,7 @@ macOS / Linux：
 想用复制而不是链接：`.\install.ps1 -Mode copy` / `./install.sh --copy`
 卸载：`.\install.ps1 -Uninstall` / `./install.sh --uninstall`
 
-装完 install 脚本会自检 Python、浏览器、Codex，并跑一次冒烟测试。
+装完 install 脚本会自检 Python 和 Codex，并跑一次冒烟测试。
 
 ### Claude Code
 
@@ -58,9 +71,8 @@ macOS / Linux：
 
 | 需要 | 用来 | 备注 |
 |---|---|---|
-| **Python 3.9+** | 合规扫描、封面渲染、字幕生成 | 只用标准库，不装任何包 |
-| **Edge 或 Chrome** | 封面 HTML→PNG 渲染 | **Windows 自带 Edge，零安装** |
-| Codex CLI | 出图用内置 `image_gen` | 走 ChatGPT 订阅，**不需要 API key** |
+| **Python 3.9+** | 合规扫描、语气统计、字幕生成 | 只用标准库，不装任何包 |
+| Codex CLI | 可选 | 不需要任何图像生成 API key |
 
 ---
 
@@ -138,69 +150,6 @@ L1/L2 是拦截项（exit 1）。
 
 ---
 
-## 封面图怎么出的
-
-| 做什么 | 谁做 | 为什么 |
-|---|---|---|
-| 背景、氛围、质感 | Codex 内置 `image_gen` | 走 ChatGPT 订阅，不需要 API key |
-| **中文标题文字** | 本地 HTML/CSS 渲染 | AI 出图写中文经常缺笔画、错字、字距乱 |
-
-封面标题是要被人读的，不能赌 AI 这次能不能把字写对。所以**背景归 AI，文字归渲染器**。
-
-### 风格：zine 极简杂志风
-
-视觉体系参考 [gc-minimal-zine-poster](https://github.com/LiamGvchi/gc-minimal-zine-poster)：
-**纸纹负空间 + 单一高彩度锚色 + 安静的宋体／打字机字 + 印刷缺陷**（半调网点、
-颗粒、套印偏移、套准标记）。纸纹和颗粒是 CSS + 内联 SVG 噪声做的，不依赖任何外部图片。
-
-```bash
-python skills/xhs-cover/scripts/render_cover.py \
-  --title "京都下雨那天|我什么都没干" \
-  --label "travel [03]" --caption "一个人旅行 · 第 3 天" \
-  --micro "kyoto 2026.08" --sig "@vivian" --out cover.png
-```
-
-出 1080×1440（3:4）PNG。五种样式：
-
-| 样式 | 说明 |
-|---|---|
-| `zine` ★默认 | 留白约 60%，标题 88–100px。安静但缩略图里读得清 |
-| `zine-pure` | 忠实原版：留白 75%+，字很小。好看，但靠封面抓陌生人时吃亏 |
-| `zine-photo` | 照片装进不出血窗口，去饱和 + 压网点 + 叠锚色油墨 |
-| `plain` / `photo` | 传统大黑字封面。想要冲击力时用 |
-
-**原版是 3:5 海报、留白 70–90%、字很小**；小红书封面是 3:4 且要在信息流缩略图里
-被看清，完全照搬标题会小到读不出来。`zine` 是调过比例的版本，`zine-pure` 是忠实版
-—— 两个都在，你自己挑。理由写在 [zine-style.md](skills/xhs-cover/references/zine-style.md)。
-
-### 锚每篇按主题换
-
-封面中间那个高彩度图形（锚）**不是固定方块** —— 26 个形状，按这篇的核心隐喻挑：
-
-| 组 | 形状 |
-|---|---|
-| 几何 / 通用 | `block` `disc` `ring` `arc` `triangle` `cross` `slash` `bracket` |
-| 数据 / 时间 | `bars` `timeline` `steps` `dots-grid` `arrow` |
-| 制度 / 法规 | `stars` `stamp` `scale` `shield` `ban` |
-| 自然 / 生活 | `moon` `waves` `rain` `sun` `window-frame` `cup` |
-| 抽象材质 | `halftone` `grain-square` |
-
-库里没有就 `--anchor-svg` 自己画（viewBox `0 0 100 100`，颜色用 `currentColor`）。
-
-### 配色固定，锚变化
-
-| | 变不变 | 为什么 |
-|---|---|---|
-| 纸色 + 锚色 + 署名 | **固定** | 主页九宫格的辨识度靠这个 |
-| 锚形状 | **每篇换** | 封面要指向这一篇的内容 |
-
-固定那部分写进 `profile/cover.json`，脚本自动往上找，不用每次敲。
-命令行参数优先级更高，渲染时会打印实际生效的字段。
-
-字号按字数自动算，扣掉字距和内缩，保证不折行。每次渲染都在 PNG 旁边留一份
-`cover.html` —— 想微调改它，然后 `--from-html cover.html` 重渲。
-
----
 
 ## 产出长什么样
 
@@ -209,13 +158,8 @@ python skills/xhs-cover/scripts/render_cover.py \
 ```
 drafts/2026-08-13-kyoto-rainy-day/
 ├── note.md          # 标题 / 正文 / 标签，正文能直接全选复制
-├── note-b.md        # 进阶版（如果出了）
 ├── compliance.md    # 合规报告：命中项、等级、改法、改后对比
 ├── checklist.md     # 发布前逐项确认（含 AI 声明）
-├── cover.png        # 1080×1440 封面
-├── cover.html       # 排版源文件，可改
-├── cover-bg.png     # image_gen 出的背景（如有）
-├── imagegen.md      # 用过的出图 prompt，方便复现
 ├── script.md        # 分镜 + 口播 + 拍摄清单（视频笔记）
 └── subtitle.srt     # 字幕（视频笔记）
 ```
@@ -233,11 +177,13 @@ drafts/2026-08-13-kyoto-rainy-day/
 ├── install.ps1 / install.sh
 ├── .claude-plugin/plugin.json   # Claude Code plugin manifest
 ├── profile/
-│   └── voice.md                 # ★ 你的语气档案（跑 xhs-voice 生成）
+│   ├── account.md               # ★ 数据基线与内容方向（xhs-strategy 的输入）
+│   └── voice.md                 # 语气护栏（跑 xhs-voice 生成）
 ├── samples/                     # 你的历史笔记（已 gitignore）
 ├── drafts/                      # 产出（已 gitignore）
 └── skills/
-    ├── xhs-voice/               # 学语气 · 建档案
+    ├── xhs-strategy/            # ★ 定方向 · 数据复盘 · 选题
+    ├── xhs-voice/               # 语气护栏 · 建档案
     │   ├── scripts/voice_stats.py       句长、标点、emoji、口头禅统计
     │   └── references/questionnaire.md  没语料时的冷启动问卷
     ├── xhs-note/                # 写笔记
@@ -247,10 +193,6 @@ drafts/2026-08-13-kyoto-rainy-day/
     │   ├── scripts/xhs_scan.py          扫描器
     │   ├── scripts/lexicon.json         分级词库
     │   └── references/                  平台规则 / 安全改写 / 发布清单
-    ├── xhs-cover/               # 封面图
-    │   ├── scripts/render_cover.py      HTML → 1080×1440 PNG
-    │   ├── assets/cover-template.html   排版模板（纸纹/颗粒/网点都在这）
-    │   └── references/zine-style.md     zine 视觉体系与改编说明
     ├── xhs-script/              # 视频脚本 · 分镜
     └── xhs-vlog/                # 剪辑协助 · 字幕
         └── scripts/make_srt.py          口播稿 → .srt
@@ -268,10 +210,6 @@ python skills/xhs-guard/scripts/xhs_scan.py note.md --strict --json
 
 # 语气统计
 python skills/xhs-voice/scripts/voice_stats.py samples
-
-# 封面渲染
-python skills/xhs-cover/scripts/render_cover.py --title "标题|第二行" --out cover.png
-python skills/xhs-cover/scripts/render_cover.py --title "..." --tone kraft --accent tomato --out cover.png
 
 # 字幕生成
 python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5.0
@@ -304,7 +242,7 @@ python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5
 （AI 视觉创作、AI 角色创作、AI 知识科普都是鼓励方向），
 但打击 AI 造假、AI 托管养号、以及**不标注的纯 AI 内容**。
 
-所以：用了 `image_gen` 出图，或正文主要由 AI 写 —— 发布时记得
+封面不涉及这一条（本地 CSS 排版不是生成）。但**正文主要由 AI 起草**时 —— 发布时记得
 
 > 【设置】→【内容类型声明】→ 勾选【笔记含 AI 合成内容】
 
@@ -317,7 +255,8 @@ python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5
 - 词库是根据公开资料整理的经验清单，不是官方词表。**命中不等于一定违规，
   未命中也不等于一定安全。** 最终以平台实际审核为准。
 - 本仓库不提供、也不会帮你实现任何规避平台审核的手段。
-- 不抓取小红书。语料一律手动提供。
+- 读取小红书：**只在你本人登录态下读你自己的笔记**（2026-08 放开，见 `AGENTS.md` 1.5）。
+  不绕验证码/风控、不读别人的笔记、不批量扫站。优先走创作者后台。
 
 ---
 

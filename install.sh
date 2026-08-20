@@ -81,26 +81,7 @@ done
 if [[ -n "$PY" ]]; then
   printf '  ✓ Python：%s\n' "$($PY --version 2>&1)"
 else
-  printf '  ✗ 找不到 Python —— 合规扫描、封面渲染、字幕生成都需要它\n'
-fi
-
-BROWSER=""
-for b in \
-  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  "/Applications/Chromium.app/Contents/MacOS/Chromium"; do
-  [[ -x "$b" ]] && { BROWSER="$b"; break; }
-done
-if [[ -z "$BROWSER" ]]; then
-  for b in google-chrome chromium chromium-browser microsoft-edge; do
-    command -v "$b" >/dev/null 2>&1 && { BROWSER="$b"; break; }
-  done
-fi
-if [[ -n "$BROWSER" ]]; then
-  printf '  ✓ 浏览器（封面渲染用）：%s\n' "$(basename "$BROWSER")"
-else
-  printf '  ✗ 找不到 Chrome / Edge / Chromium —— 封面渲染需要\n'
-  printf '    装在别处就设：export BROWSER_PATH=/path/to/chrome\n'
+  printf '  ✗ 找不到 Python —— 合规扫描、语气统计、字幕生成都需要它\n'
 fi
 
 if command -v codex >/dev/null 2>&1; then
