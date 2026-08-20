@@ -137,7 +137,7 @@ if ($codex) {
     Write-Host "  ✓ Codex CLI：$($codex.Source)" -ForegroundColor Green
 }
 else {
-    Write-Host '  ! 没找到 codex 命令（如果你只在 Claude Code 里用，可以忽略）' -ForegroundColor DarkYellow
+    Write-Host '  ! 没找到 codex 命令 —— 技能已装好，装上 Codex CLI 就能用' -ForegroundColor DarkYellow
 }
 
 # ---------------------------------------------------------------- 冒烟测试
@@ -161,8 +161,5 @@ Write-Host '  装好了。接下来：' -ForegroundColor Cyan
 Write-Host ''
 Write-Host '  1. 把你发过的笔记放进 samples\（一篇一个 .md，越多越准）'
 Write-Host '  2. 开 codex，说「学一下我的语气」→ 会生成 profile\voice.md'
-Write-Host '  3. 然后就可以说「帮我写篇笔记」「做个封面」「审一下这个文案」'
-Write-Host ''
-Write-Host '  Claude Code 用户：这个仓库同时是一个 plugin，' -ForegroundColor DarkGray
-Write-Host "  在 Claude Code 里把 $Repo 添加为本地 plugin 即可。" -ForegroundColor DarkGray
+Write-Host '  3. 然后就可以说「我该发什么」「帮我写篇笔记」「审一下这个文案」'
 Write-Host ''

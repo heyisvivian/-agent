@@ -87,7 +87,7 @@ fi
 if command -v codex >/dev/null 2>&1; then
   printf '  ✓ Codex CLI：%s\n' "$(command -v codex)"
 else
-  printf '  ! 没找到 codex 命令（只在 Claude Code 里用可忽略）\n'
+  printf '  ! 没找到 codex 命令 —— 技能已装好，装上 Codex CLI 就能用\n'
 fi
 
 # ---------------------------------------------------------------- 冒烟测试
@@ -112,6 +112,6 @@ cat <<'EOF'
 
   1. 把你发过的笔记放进 samples/（一篇一个 .md，越多越准）
   2. 开 codex，说「学一下我的语气」→ 会生成 profile/voice.md
-  3. 然后就可以说「帮我写篇笔记」「做个封面」「审一下这个文案」
+  3. 然后就可以说「我该发什么」「帮我写篇笔记」「审一下这个文案」
 
 EOF
