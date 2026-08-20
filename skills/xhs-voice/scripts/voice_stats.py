@@ -52,9 +52,18 @@ PUNCT_GROUPS = {
     "括号（）": "（）()",
 }
 
+# 顺序有讲究：国旗和键帽必须排在通用范围前面 —— 区域指示符和数字都落在
+# 通用范围里/前面，先匹配长的才不会被拆成两半（🇫🇷 曾被数成 2 个）。
 EMOJI_RE = re.compile(
-    "[\U0001F300-\U0001FAFF\U0001F000-\U0001F2FF☀-➿⬀-⯿←-⇿]"
+    "[\U0001F1E6-\U0001F1FF]{2}"                     # 国旗 🇫🇷 算 1 个
+    "|[0-9#*]\uFE0F?\u20E3"                          # 数字键帽 1️⃣ 2️⃣ —— 攻略型当项目符号用
+    "|[\U0001F300-\U0001FAFF\U0001F000-\U0001F2FF☀-➿⬀-⯿←-⇿]\uFE0F?"
 )
+
+# 小红书原生表情代码：[种草R]、[心心眼R]、[偷笑R]。
+# 它们在 App 里渲染成表情，作用等同 emoji，但纯文本里是方括号，
+# 任何 emoji 正则都看不见 —— 必须单独数。
+XHS_EMOTE_RE = re.compile(r"\[[^\[\]]{1,8}R\]")
 
 
 def strip_frontmatter(text: str) -> tuple[str, str]:
@@ -156,6 +165,7 @@ def analyse(files: list[Path]) -> dict:
         punct[label] = {"count": c, "per_100": round(c / total * 100, 2)}
 
     emojis = EMOJI_RE.findall(all_body)
+    emotes = XHS_EMOTE_RE.findall(all_body)
 
     # 开头：每篇第一段的前 12 字
     openers = [n["body"].strip().split("\n")[0][:12] for n in notes if n["body"].strip()]
@@ -197,6 +207,10 @@ def analyse(files: list[Path]) -> dict:
             "每百字": round(len(emojis) / total * 100, 2),
             "常用": Counter(emojis).most_common(12),
             "用不用": "几乎不用" if len(emojis) / total * 100 < 0.5 else "会用",
+            "小红书表情代码": {
+                "总数": len(emotes),
+                "常用": Counter(emotes).most_common(8),
+            },
         },
         "人称": {
             "我": first_person,
@@ -241,6 +255,10 @@ def render(d: dict) -> str:
 
     e = d["emoji"]
     L.append(f"emoji：{e['用不用']}，每百字 {e['每百字']} 个（共 {e['总数']}）")
+    xe = e["小红书表情代码"]
+    if xe["总数"]:
+        L.append(f"  小红书表情代码：共 {xe['总数']} 个 —— "
+                 + "  ".join(f"{k}×{v}" for k, v in xe["常用"]))
     if e["常用"]:
         L.append("  常用：" + "  ".join(f"{k}×{v}" for k, v in e["常用"]))
     L.append("")

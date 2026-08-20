@@ -128,22 +128,8 @@ if ($py) {
     Write-Host "  ✓ Python：$ver" -ForegroundColor Green
 }
 else {
-    Write-Host '  ✗ 找不到 Python —— 合规扫描、封面渲染、字幕生成都需要它' -ForegroundColor Red
+    Write-Host '  ✗ 找不到 Python —— 合规扫描、语气统计、字幕生成都需要它' -ForegroundColor Red
     Write-Host '    装一个：https://www.python.org/downloads/' -ForegroundColor DarkGray
-}
-
-$browser = @(
-    'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
-    'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
-    'C:\Program Files\Google\Chrome\Application\chrome.exe'
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-if ($browser) {
-    Write-Host "  ✓ 浏览器（封面渲染用）：$(Split-Path $browser -Leaf)" -ForegroundColor Green
-}
-else {
-    Write-Host '  ✗ 找不到 Edge / Chrome —— 封面渲染需要' -ForegroundColor Red
-    Write-Host '    装在别处就设：$env:BROWSER_PATH = ''C:\path\to\msedge.exe''' -ForegroundColor DarkGray
 }
 
 $codex = Get-Command codex -ErrorAction SilentlyContinue

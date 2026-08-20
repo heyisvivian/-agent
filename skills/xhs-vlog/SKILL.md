@@ -166,16 +166,16 @@ python skills/xhs-guard/scripts/xhs_scan.py drafts/<日期>-<slug>/subtitle.srt
 - 有留白能放标题（上部或下部要有相对干净的区域）
 - 不要动态模糊的帧
 
-选好后在剪映里导出这一帧，然后压字：
+选好后在剪映里导出这一帧，压字在剪映或你惯用的工具里做
+（**本仓库不做封面**，`xhs-cover` 已于 2026-08-20 删除）。
+
+**B · 单独做封面** —— 你自己的流程。
+
+⚠️ 封面上的字**一样会被审核**，做完扫一遍：
 
 ```bash
-python skills/xhs-cover/scripts/render_cover.py \
-  --title "京都下雨那天|我什么都没干" \
-  --bg frame.png --style photo \
-  --out drafts/<日期>-<slug>/cover.png
+python skills/xhs-guard/scripts/xhs_scan.py --text "<封面上的文字>"
 ```
-
-**B · 单独做封面** —— 走 `xhs-cover` 的路线 A 或 C。
 
 ⚠️ 小红书视频封面**仍然按 3:4 出**（1080×1440），不是 9:16。
 视频本身是 9:16，封面是 3:4，这两个不一样。
@@ -207,7 +207,7 @@ python skills/xhs-cover/scripts/render_cover.py \
 
 视频笔记同样需要标题、正文、标签 —— 走 `xhs-note`，**别只给视频忘了文案**。
 
-⚠️ **AI 声明**：如果封面用了 `image_gen`，或视频里有 AI 生成的画面，
+⚠️ **AI 声明**：如果正文主要由 AI 起草，或视频里有 AI 生成的画面，
 发布时【设置】→【内容类型声明】→ 勾选【笔记含 AI 合成内容】。
 
 ---
@@ -220,7 +220,6 @@ drafts/<YYYY-MM-DD>-<短slug>/
 ├── footage.md          # 素材清点表
 ├── edit-plan.md        # 剪辑顺序、卡点、取舍决策
 ├── subtitle.srt        # 字幕
-├── cover.png           # 3:4 封面
 ├── note.md             # 标题/正文/标签
 ├── compliance.md
 └── checklist.md
@@ -233,6 +232,6 @@ drafts/<YYYY-MM-DD>-<短slug>/
 1. `edit-plan.md` —— 剪辑顺序表（她照着在剪映里排）
 2. `subtitle.srt` 的路径 + 一句怎么导入剪映
 3. 素材里**不能用**的那些，逐条说清为什么
-4. 封面帧建议（具体到哪个文件的第几秒）
+4. 封面帧建议（具体到哪个文件的第几秒）—— 只给建议，图你自己做
 5. 导出设置 + 「关片尾、查水印」的提醒
 6. 别忘了问她文案要不要一起写
