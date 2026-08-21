@@ -194,7 +194,7 @@ drafts/2026-08-13-kyoto-rainy-day/
 
 ---
 
-## 三个脚本，单独也能用
+## 四个脚本，单独也能用
 
 ```bash
 # 合规扫描
@@ -207,6 +207,11 @@ python skills/xhs-voice/scripts/voice_stats.py samples
 
 # 字幕生成
 python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5.0
+```
+
+```bash
+# 合规扫描器的回归断言（改完 lexicon.json 一定要跑）
+python skills/xhs-guard/scripts/test_xhs_scan.py
 ```
 
 全部只用 Python 标准库。不联网，不上传任何内容。
@@ -222,6 +227,15 @@ python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5
   更新 `version` 和 `updated`
 - **误报** → 加到对应规则的 `exclude` 数组
 - **`updated` 距今超过半年** → 该去复核平台最新规则了
+
+⚠️ **改完词库跑一遍断言**：
+
+```bash
+python skills/xhs-guard/scripts/test_xhs_scan.py
+```
+
+79 条断言，分「必须放行」和「必须拦下」两组。豁免加宽了会从后一组漏出去，
+规则收紧了会让前一组的误报回归 —— 两种都不该带上线。只用标准库，几秒钟跑完。
 
 `profile/voice.md` 也要维护：**每积累 10 篇新笔记就重跑一次 `xhs-voice`**，
 看看统计有没有漂移。她说「这个不像我」的时候，把结论写回档案 ——
