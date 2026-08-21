@@ -131,13 +131,25 @@ def parse_note(raw: str) -> dict:
                 title = ln.strip().lstrip("#").strip()
                 break
 
+    # 扫描目标：只包含**会被发布**的部分。
+    # frontmatter 里只有 title / tags 会发出去；其余键（备注、线、互动…）是本地
+    # 元数据，扫它们会造成假命中 —— 一句「工具属性最强」的备注就能报一条 L2。
+    # 非发布行用空行替换而不是删掉，这样报告里的「第 N 行」仍然对得上原文行号。
+    scan = raw
+    if fm:
+        kept = []
+        for line in raw[: fm.start(2)].split("\n"):
+            key = line.partition(":")[0].strip().lower()
+            kept.append(line if ":" in line and key in ("title", "tags") else "")
+        scan = "\n".join(kept) + body
+
     # 正文里的 #标签（小红书的话题写法），合并进标签列表
     for m in re.finditer(r"#([^\s#\[\]]{1,20})", body):
         tag = m.group(1).strip("＃")
         if tag and tag not in tags:
             tags.append(tag)
 
-    return {"title": title, "tags": tags, "body": body, "raw": raw}
+    return {"title": title, "tags": tags, "body": body, "raw": raw, "scan": scan}
 
 
 # ---------------------------------------------------------------- 工具
@@ -169,8 +181,10 @@ def visible_len(text: str) -> int:
 # ---------------------------------------------------------------- 扫描
 def scan_text(note: dict, lex: dict, min_tier: str = "L4") -> list[dict]:
     cutoff = TIER_ORDER.index(min_tier)
-    # 标题 + 正文 + 标签一起扫。标题和标签也是审核范围。
-    target = note["raw"]
+    # 标题 + 正文 + 标签一起扫 —— 标题和标签也是审核范围。
+    # 但**只扫会被发布的部分**：note["scan"] 已经把 frontmatter 里的非发布键
+    # （备注、线、互动…）清空了。扫 raw 会把本地元数据当正文报，见 parse_note。
+    target = note["scan"]
     hits, seen = [], set()
 
     for rule in lex["rules"]:
