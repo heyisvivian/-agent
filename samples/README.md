@@ -56,7 +56,7 @@ AI 稿想留着参考就放 `samples/_ai/` —— 下划线开头，统计脚本
 
 ## ★ 按内容类型分子目录
 
-这个账号有两种内容，写法不是同一套，所以**分开放、分开统计**：
+这个账号有三种内容（A 种草 / B 攻略 / C 生活），写法不是同一套，所以**分开放、分开统计**：
 
 ```
 samples/
@@ -71,11 +71,12 @@ samples/
 ```bash
 python skills/xhs-voice/scripts/voice_stats.py samples/guide
 python skills/xhs-voice/scripts/voice_stats.py samples/life
+python skills/xhs-voice/scripts/voice_stats.py samples/zhongcao
 ```
 
-**混在一起统计没意义** —— 两种模式的 emoji 密度会被平均成一个不存在的数字。
-科普稿 emoji 当项目符号（每百字 2.7 个），生活稿可能一个都不用，
-平均出来 1.3 个，两边都不对。
+**混在一起统计没意义** —— 不同模式的指标会被平均成一个不存在的数字。
+攻略稿 emoji 当评分刻度（💣🌟 可连排），种草稿只在行末放一个，
+平均出来的密度两边都不对；A1 种草稿零标点，混进去句长统计直接失真。
 
 只有一种内容就直接放 `samples/` 根目录。
 第三种类型（比如恰饭稿、测评）就再开一个子目录。
@@ -162,7 +163,9 @@ tags: [体检, 法国生活, 医疗]
 或者直接跑统计看看：
 
 ```bash
-python skills/xhs-voice/scripts/voice_stats.py samples
+python skills/xhs-voice/scripts/voice_stats.py samples/guide
+python skills/xhs-voice/scripts/voice_stats.py samples/life
+python skills/xhs-voice/scripts/voice_stats.py samples/zhongcao
 ```
 
 会输出句长分布、标点频率、emoji 偏好、口头禅、开头结尾套路。

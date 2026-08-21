@@ -1,6 +1,7 @@
 # xhs-agent · 小红书创作技能包
 
-给 **Codex CLI** 用的小红书「一人编辑部」。
+给 **Codex CLI** 用的小红书「一人编辑部」——
+**服务对象是 @viviiiwang 一个账号**（仓库公开供参考；换账号用见「快速开始」第二条路径）。
 **先根据你的真实数据定方向和选题**，再写文案、写视频脚本和字幕，
 **发布前把违规词和限流风险扫一遍**，发布后把互动数据收回来喂下一轮选题。
 
@@ -75,27 +76,36 @@ macOS / Linux：
 
 ## 快速开始
 
+**Viviane 本人**：①数据基线已就位（22 篇语料 + `voice.md` + `account.md`，
+2026-08-21 建），跳过下面的搭建步骤，开 codex 直接说话（示例见下）。
+之后的维护就是循环⑤：发一篇回填一篇，每 10 篇重跑一次 `xhs-voice`。
+
+**换一个账号用这套仓库**：`profile/` 和 `samples/` 里全是 @viviiiwang 的数据 ——
+直接用会写出别人的语气、按别人的数据选题。先清空这两处，然后按顺序：
+
 ```bash
-# 1. 把你发过的笔记放进 samples/，按类型分子目录：
+# 1. 把你发过的笔记放进 samples/，按类型分子目录（见 samples/README.md）：
 #      samples/guide/ 攻略 · samples/life/ 生活 · samples/zhongcao/ 种草
 #      （AI 稿放 _ai/，正文不全放 _partial/，零文案视频放 _video/）
-#    每种 15 篇统计才稳、8 篇够用。见 samples/README.md
-#    ★ 2026-08-21 已转录 22 篇就位
+#    每种 15 篇统计才稳、8 篇够用
 
-# 2. 开 codex，让它学你的语气
+# 2. 先建数据基线（第一优先 —— 选题 > 笔锋）
+```
+> 帮我复盘数据，按 account.md 现有结构建我的数据基线
+
+需要每篇的赞/藏/评/享四项（笔记详情页或创作中心，别用主页截图）。
+
+```
+# 3. 再建语气护栏
 ```
 > 学一下我的语气
 
-会生成 `profile/voice.md`（2026-08-21 已生成，三模式）。每积累 10 篇重跑一次看漂移。
-数据基线 `profile/account.md` 也已建好（台账 + 效率表 v2 + 选题库）——
-「我该发什么」的答案从它出。
-
-⚠️ **档案是分模式的。** 同一个人写科普和写生活不是同一套写法 ——
-科普稿里 emoji 当项目符号是对的，生活稿里同样密度就成模板号了。
-所以要分开放样本、分开统计、分开建档，写之前先定模式。
+会生成 `profile/voice.md`。⚠️ **档案是分模式的** —— 同一个人写攻略和写生活
+不是同一套写法（攻略稿 emoji 当评分刻度是对的，种草稿连排同款就成模板号），
+分开放样本、分开统计、分开建档，写之前先定模式。
 
 ```
-# 3. 然后就可以直接说话了
+# 4. 然后就可以直接说话了
 ```
 > 帮我写篇笔记：京都下雨那天我什么也没干，在民宿窗边坐了一下午
 >
@@ -209,7 +219,7 @@ python skills/xhs-guard/scripts/xhs_scan.py --text "全网最好吃的一家，�
 python skills/xhs-guard/scripts/xhs_scan.py note.md --strict --json
 
 # 语气统计
-python skills/xhs-voice/scripts/voice_stats.py samples
+python skills/xhs-voice/scripts/voice_stats.py samples/guide   # 按模式目录跑，指向 samples 根会提示你分开跑
 
 # 字幕生成
 python skills/xhs-vlog/scripts/make_srt.py narration.txt -o subtitle.srt --cps 5.0
@@ -247,7 +257,7 @@ python skills/xhs-guard/scripts/test_xhs_scan.py
 重算效率表（节奏见文件内「回流节奏」节）。它停更，选题就回到拍脑袋。
 
 `profile/voice.md` 也要维护：**每积累 10 篇新笔记就重跑一次 `xhs-voice`**，
-看看统计有没有漂移。她说「这个不像我」的时候，把结论写回档案 ——
+看看统计有没有漂移。你说「这个不像我」的时候，把结论写回档案 ——
 一次这样的反馈价值大于十篇样本。
 
 ---
