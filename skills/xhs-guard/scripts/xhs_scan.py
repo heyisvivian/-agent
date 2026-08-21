@@ -131,13 +131,25 @@ def parse_note(raw: str) -> dict:
                 title = ln.strip().lstrip("#").strip()
                 break
 
+    # 扫描目标：只包含**会被发布**的部分。
+    # frontmatter 里只有 title / tags 会发出去；其余键（备注、线、互动…）是本地
+    # 元数据，扫它们会造成假命中 —— 一句「工具属性最强」的备注就能报一条 L2。
+    # 非发布行用空行替换而不是删掉，这样报告里的「第 N 行」仍然对得上原文行号。
+    scan = raw
+    if fm:
+        kept = []
+        for line in raw[: fm.start(2)].split("\n"):
+            key = line.partition(":")[0].strip().lower()
+            kept.append(line if ":" in line and key in ("title", "tags") else "")
+        scan = "\n".join(kept) + body
+
     # 正文里的 #标签（小红书的话题写法），合并进标签列表
     for m in re.finditer(r"#([^\s#\[\]]{1,20})", body):
         tag = m.group(1).strip("＃")
         if tag and tag not in tags:
             tags.append(tag)
 
-    return {"title": title, "tags": tags, "body": body, "raw": raw}
+    return {"title": title, "tags": tags, "body": body, "raw": raw, "scan": scan}
 
 
 # ---------------------------------------------------------------- 工具
@@ -169,8 +181,10 @@ def visible_len(text: str) -> int:
 # ---------------------------------------------------------------- 扫描
 def scan_text(note: dict, lex: dict, min_tier: str = "L4") -> list[dict]:
     cutoff = TIER_ORDER.index(min_tier)
-    # 标题 + 正文 + 标签一起扫。标题和标签也是审核范围。
-    target = note["raw"]
+    # 标题 + 正文 + 标签一起扫 —— 标题和标签也是审核范围。
+    # 但**只扫会被发布的部分**：note["scan"] 已经把 frontmatter 里的非发布键
+    # （备注、线、互动…）清空了。扫 raw 会把本地元数据当正文报，见 parse_note。
+    target = note["scan"]
     hits, seen = [], set()
 
     for rule in lex["rules"]:
@@ -258,19 +272,44 @@ def check_format(note: dict, lex: dict, note_type: str = "life") -> list[dict]:
     else:
         add("ok", "emoji 密度", f"每百字 {per100:.1f} 个", "—", "")
 
-    # emoji 连排 —— 比密度更能说明问题：😍😍😍 是模板号的标志
-    runs = []
-    for i, ch in enumerate(note["body"]):
+    # emoji 连排 —— 比密度更能说明问题：😍😍😍 是模板号的标志。
+    #
+    # 但有一种连排不是堆砌：同一个 emoji 在**多行**以**不同数量**出现时，
+    # 数量就是程度，它是评分刻度。实例（她的游泳馆测评）：
+    #     Joséphine Baker Pool 💣💣💣   ← 差
+    #     Espace Sportif Pontoise 💣
+    #     Piscine Thérèse 🌟🌟
+    #     Jean Boiteux Pool 🌟🌟🌟🌟     ← 好
+    # 把 🌟×4 压成「最多 2 连」等于把四星改成两星，是改坏不是改好。
+    # 所以识别出来单独说明 —— 不静默放行，让人看到工具做了这个判断。
+    body_t = note["body"]
+    runs_by = {}  # emoji -> [(连排长度, 行号), ...]
+    i = 0
+    while i < len(body_t):
+        ch = body_t[i]
         if not is_emoji(ch):
+            i += 1
             continue
         run = 1
-        while i + run < len(note["body"]) and note["body"][i + run] == ch:
+        while i + run < len(body_t) and body_t[i + run] == ch:
             run += 1
-        if run >= 3 and (i == 0 or note["body"][i - 1] != ch):
-            runs.append(f"{ch}×{run}")
-    if runs:
-        add("warn", "emoji 连排", "、".join(runs[:6]), "同一个最多 2 连",
+        runs_by.setdefault(ch, []).append((run, line_of(body_t, i)))
+        i += run
+
+    scales, spam = [], []
+    for ch, rs in runs_by.items():
+        # 评分刻度：出现 ≥2 次、跨 ≥2 行、而且数量不全一样
+        if len({ln for _, ln in rs}) >= 2 and len({r for r, _ in rs}) >= 2:
+            scales.append(f"{ch}×" + "/".join(str(r) for r, _ in rs))
+        else:
+            spam += [f"{ch}×{r}" for r, _ in rs if r >= 3]
+
+    if spam:
+        add("warn", "emoji 连排", "、".join(spam[:6]), "同一个最多 2 连",
             "同一个 emoji 连打三个以上是模板号最明显的特征之一。删到 1–2 个，情绪不会少。")
+    elif scales:
+        add("ok", "emoji 连排", "无堆砌（识别为评分刻度：" + "、".join(scales[:4]) + "）", "—",
+            "同一 emoji 多行不同数量 = 程度标记，按刻度放行。别压成 2 连 —— 那会改掉评分本身。")
     else:
         add("ok", "emoji 连排", "无", "—", "")
 

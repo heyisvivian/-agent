@@ -1,12 +1,10 @@
-# 你的历史笔记语料 —— 本地学习用，不上传
-samples/*
-!samples/README.md
-!samples/_format-example.md
-
-# 你的语气档案 —— 默认不上传。
-# 这个仓库是公开的，而 voice.md 里会有你笔记的原文引用和写作习惯分析。
-# 想在多台机器间同步就把下面这行删掉（见 profile/README.md）。
-profile/voice.md
+# samples/ 和 profile/voice.md 从 2026-08-21 起进 git（用户决定）。
+#
+# 理由：samples/ 里放的是**已经发布过**的笔记，原文本来就是公开的；
+# 档案进 git 之后多机同步和版本追溯都省事，别人也能复核每条结论的依据。
+#
+# ⚠️ 由此改变的一条规则：samples/ 现在会被发布。
+#    未发布的草稿、私人笔记、别人的内容 —— 都不要放进去。见 samples/README.md。
 
 # 产出的草稿（图片体积大 + 未发布内容，默认不进 git）
 drafts/*
