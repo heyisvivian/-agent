@@ -173,7 +173,7 @@ drafts/2026-08-13-kyoto-rainy-day/
 ├── profile/
 │   ├── account.md               # ★ 数据基线与内容方向（xhs-strategy 的输入）
 │   └── voice.md                 # 语气护栏（跑 xhs-voice 生成）
-├── samples/                     # 你的历史笔记（已 gitignore）
+├── samples/                     # 你发过的笔记（进 git，见 samples/README.md）
 ├── drafts/                      # 产出（已 gitignore）
 └── skills/
     ├── xhs-strategy/            # ★ 定方向 · 数据复盘 · 选题

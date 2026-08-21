@@ -285,8 +285,13 @@ drafts/2026-08-13-kyoto-rainy-day/
 **不再做**：逐项比对人称、句长分布、标点频率、emoji 密度。
 那些统计还在（`voice_stats.py`），但只用来发现异常，不用来当写作规格。
 
-- 位置：`profile/voice.md`（**已 gitignore** —— 仓库是公开的，档案里有她笔记的原文引用）
-- 语料：`samples/`（**已 gitignore**），按类型分子目录：`samples/guide/`、`samples/life/`
+- 位置：`profile/voice.md`（**2026-08-21 起进 git** —— 之前是 gitignore 的，
+  用户决定放进公开仓库，因为档案引用的原文都是她已发布的笔记）
+- 语料：`samples/`（**同上，进 git**），按类型分子目录：
+  `samples/guide/` · `samples/life/` · `samples/zhongcao/` ·
+  `samples/_ai/`（AI 稿，隔离不统计）· `samples/_partial/`（正文不全）·
+  `samples/_video/`（零文案视频）
+- ⚠️ **`samples/` 现在会被公开。** 只放已发布的笔记；未发布的草稿走 `drafts/`（仍 gitignore）
 - 没有语料时用 `skills/xhs-voice/references/questionnaire.md` 问卷冷启动
 
 ### ★ 档案是分模式的（register）
